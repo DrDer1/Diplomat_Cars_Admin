@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>الدبلوماسي - نظام الإدارة</title>
+
+<meta name="theme-color" content="#e94560">
+
+<link rel="manifest" href="manifest.json">
+
+<link rel="icon"
+href="assets/icons/icon-512.png">
+
+<link rel="apple-touch-icon"
+href="assets/icons/icon-512.png">
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<!-- شاشة التحميل -->
+
+<div id="loadingScreen">
+
+<div class="loader"></div>
+
+<div class="loadingText">
+
+جاري تشغيل نظام الإدارة...
+
+</div>
+
+</div>
+
+<!-- شاشة كلمة المرور -->
+
+<section id="authScreen" class="hidden">
+
+<div class="authCard">
+
+<h1>
+
+🔐
+
+الدبلوماسي
+
+</h1>
+
+<p>
+
+نظام إدارة السيارات
+
+</p>
+
+<input
+type="password"
+id="passwordInput"
+placeholder="كلمة المرور">
+
+<button id="loginButton">
+
+دخول
+
+</button>
+
+</div>
+
+</section>
+
+<!-- التطبيق -->
+
+<div id="app" class="hidden">
+
+<!-- القائمة الجانبية -->
+
+<aside id="sidebar">
+
+<div class="logo">
+
+🚗
+
+الدبلوماسي
+
+</div>
+
+<nav>
+
+<button class="menuItem active"
+
+data-page="home">
+
+🏠
+
+الرئيسية
+
+</button>
+
+<button class="menuItem"
+
+data-page="cars">
+
+🚗
+
+السيارات
+
+</button>
+
+<button class="menuItem"
+
+data-page="images">
+
+🖼️
+
+الصور
+
+</button>
+
+<button class="menuItem"
+
+data-page="phones">
+
+📞
+
+أرقام الواتساب
+
+</button>
+
+<button class="menuItem"
+
+data-page="notifications">
+
+🔔
+
+الإشعارات
+
+</button>
+
+<button class="menuItem"
+
+data-page="schedule">
+
+⏰
+
+الإشعارات الدورية
+
+</button>
+
+<button class="menuItem"
+
+data-page="password">
+
+🔑
+
+كلمة المرور
+
+</button>
+
+<button class="menuItem"
+
+data-page="settings">
+
+⚙️
+
+الإعدادات
+
+</button>
+
+</nav>
+
+</aside>
+
+<!-- زر فتح القائمة -->
+
+<button id="menuButton">
+
+☰
+
+</button>
+
+<!-- طبقة التعتيم -->
+
+<div id="overlay"></div>
+
+<!-- المحتوى -->
+
+<main id="content">
+
+<!-- الرئيسية -->
+
+<section
+id="page-home"
+class="page active">
+
+<h2>
+
+الرئيسية
+
+</h2>
+
+<div class="welcomeCard">
+
+<h3>
+
+مرحباً بك
+
+</h3>
+
+<p>
+
+يمكنك إدارة نظام عرض السيارات بالكامل من هنا.
+
+</p>
+
+</div>
+
+<div class="quickButtons">
+
+<button id="goCars">
+
+🚗
+
+السيارات
+
+</button>
+
+<button id="goImages">
+
+🖼️
+
+الصور
+
+</button>
+
+<button id="goPhones">
+
+📞
+
+الواتساب
+
+</button>
+
+<button id="goNotify">
+
+🔔
+
+الإشعارات
+
+</button>
+
+</div>
+
+</section>
+
+<!-- السيارات -->
+
+<section
+id="page-cars"
+class="page">
+
+<h2>
+
+السيارات
+
+</h2>
+
+<div id="carsContainer">
+
+</div>
+
+</section>
+
+<!-- الصور -->
+
+<section
+id="page-images"
+class="page">
+
+<h2>
+
+تعديل الصور
+
+</h2>
+
+<div id="imagesContainer">
+
+</div>
+
+</section>
+
+<!-- الواتساب -->
+
+<section
+id="page-phones"
+class="page">
+
+<h2>
+
+أرقام الواتساب
+
+</h2>
+
+<div id="phonesContainer">
+
+</div>
+
+</section>
+
+<!-- الإشعارات -->
+
+<section
+id="page-notifications"
+class="page">
+
+<h2>
+
+إرسال إشعار
+
+</h2>
+
+<div id="notificationContainer">
+
+</div>
+
+</section>
+
+<!-- الإشعارات الدورية -->
+
+<section
+id="page-schedule"
+class="page">
+
+<h2>
+
+الإشعارات الدورية
+
+</h2>
+
+<div id="scheduleContainer">
+
+</div>
+
+</section>
+
+<!-- كلمة المرور -->
+
+<section
+id="page-password"
+class="page">
+
+<h2>
+
+كلمة المرور
+
+</h2>
+
+<div id="passwordContainer">
+
+</div>
+
+</section>
+
+<!-- الإعدادات -->
+
+<section
+id="page-settings"
+class="page">
+
+<h2>
+
+الإعدادات
+
+</h2>
+
+<div id="settingsContainer">
+
+</div>
+
+</section>
+
+</main>
+
+</div>
+
+<!-- Toast -->
+
+<div id="toast">
+
+</div>
+
+<!-- Scripts -->
+
+<script src="config.js"></script>
+
+<script src="firebase.js"></script>
+
+<script src="auth.js"></script>
+
+<script src="cars.js"></script>
+
+<script src="images.js"></script>
+
+<script src="whatsapp.js"></script>
+
+<script src="notifications.js"></script>
+
+<script src="scheduler.js"></script>
+
+<script src="monitor.js"></script>
+
+<script src="settings.js"></script>
+
+<script src="app.js"></script>
+
+</body>
+
+  </html>
