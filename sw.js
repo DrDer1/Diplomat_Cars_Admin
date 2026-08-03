@@ -1,15 +1,15 @@
-const CACHE_NAME = 'diplomat-cars-admin-v1';
-const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/css/style.css',
-    '/js/config.js',
-    '/js/firebase.js',
-    '/js/app.js',
-    '/js/pwa.js',
-    '/manifest.json',
-    '/192.png',
-    '/512.png'
+var CACHE_NAME = 'diplomat-cars-admin-v2';
+var ASSETS_TO_CACHE = [
+    './',
+    './index.html',
+    './css/style.css',
+    './js/config.js',
+    './js/firebase.js',
+    './js/app.js',
+    './js/pwa.js',
+    './manifest.json',
+    './192.png',
+    './512.png'
 ];
 
 self.addEventListener('install', function(event) {
@@ -80,7 +80,7 @@ self.addEventListener('fetch', function(event) {
                 return networkResponse;
             }).catch(function() {
                 if (event.request.headers.get('accept').includes('text/html')) {
-                    return caches.match('/index.html');
+                    return caches.match('./index.html');
                 }
                 return new Response('غير متصل بالإنترنت', { status: 503 });
             });
