@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Diplomat Admin">
+    <title>Diplomat Cars - لوحة الإدارة</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="512.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="512.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <div id="setup-screen" class="screen">
+            <div class="setup-container">
+                <div class="setup-logo">⚙️</div>
+                <h2>الإعداد الأولي</h2>
+                <p>يرجى إدخال بيانات الاتصال لمرة واحدة فقط</p>
+                <form id="setup-form">
+                    <div class="form-section">
+                        <h3>Firebase Config</h3>
+                        <label>apiKey</label>
+                        <input type="text" id="fb-apiKey" placeholder="AIzaSy..." required>
+                        <label>authDomain</label>
+                        <input type="text" id="fb-authDomain" placeholder="project.firebaseapp.com" required>
+                        <label>projectId</label>
+                        <input type="text" id="fb-projectId" placeholder="project-id" required>
+                        <label>storageBucket</label>
+                        <input type="text" id="fb-storageBucket" placeholder="project.firebasestorage.app" required>
+                        <label>messagingSenderId</label>
+                        <input type="text" id="fb-messagingSenderId" placeholder="123456789" required>
+                        <label>appId</label>
+                        <input type="text" id="fb-appId" placeholder="1:123:web:abc" required>
+                    </div>
+                    <div class="form-section">
+                        <h3>OneSignal</h3>
+                        <label>App ID</label>
+                        <input type="text" id="os-appId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+                        <label>REST API Key</label>
+                        <input type="text" id="os-restApiKey" placeholder="os_v2_..." required>
+                    </div>
+                    <div class="form-section">
+                        <h3>Google Sheets</h3>
+                        <label>رابط CSV العام</label>
+                        <input type="text" id="gs-csvUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=0&single=true&output=csv" required>
+                    </div>
+                    <button type="submit" class="btn-primary full-width">حفظ الإعدادات</button>
+                </form>
+            </div>
+        </div>
+        <div id="password-screen" class="screen hidden">
+            <div class="password-container">
+                <div class="setup-logo">🔒</div>
+                <h2>Diplomat Cars</h2>
+                <p>لوحة الإدارة</p>
+                <form id="password-form">
+                    <input type="password" id="password-input" placeholder="كلمة المرور" autocomplete="off" required>
+                    <button type="submit" class="btn-primary full-width">دخول</button>
+                </form>
+            </div>
+        </div>
+        <div id="create-password-screen" class="screen hidden">
+            <div class="password-container">
+                <div class="setup-logo">🔐</div>
+                <h2>إنشاء كلمة المرور</h2>
+                <p>أنشئ كلمة مرور للوحة الإدارة</p>
+                <form id="create-password-form">
+                    <input type="password" id="new-admin-password" placeholder="كلمة المرور الجديدة" autocomplete="off" required>
+                    <input type="password" id="confirm-admin-password" placeholder="تأكيد كلمة المرور" autocomplete="off" required>
+                    <button type="submit" class="btn-primary full-width">حفظ كلمة المرور</button>
+                </form>
+            </div>
+        </div>
+        <div id="main-screen" class="screen hidden">
+            <header class="topbar">
+                <button id="menu-toggle" class="icon-btn" aria-label="القائمة">☰</button>
+                <h1>Diplomat Cars</h1>
+                <span class="topbar-badge">ADMIN</span>
+            </header>
+            <nav id="sidebar" class="sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-logo">⚙️</div>
+                    <span>لوحة التحكم</span>
+                </div>
+                <ul class="sidebar-menu">
+                    <li data-page="home" class="active">
+                        <span class="menu-icon">🏠</span>
+                        <span>الرئيسية</span>
+                    </li>
+                    <li data-page="cars">
+                        <span class="menu-icon">🚗</span>
+                        <span>السيارات</span>
+                    </li>
+                    <li data-page="notifications">
+                        <span class="menu-icon">🔔</span>
+                        <span>الإشعارات</span>
+                    </li>
+                    <li data-page="whatsapp">
+                        <span class="menu-icon">💬</span>
+                        <span>الواتساب</span>
+                    </li>
+                    <li data-page="settings">
+                        <span class="menu-icon">⚙️</span>
+                        <span>الإعدادات</span>
+                    </li>
+                    <li data-page="about">
+                        <span class="menu-icon">ℹ️</span>
+                        <span>حول النظام</span>
+                    </li>
+                </ul>
+            </nav>
+            <div id="overlay" class="overlay hidden"></div>
+            <main id="content">
+                <div id="page-home" class="page active">
+                    <div class="home-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">🚗</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="cars-count">0</span>
+                                <span class="stat-label">عدد السيارات</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🕐</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="last-update">--:--</span>
+                                <span class="stat-label">آخر تحديث</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="home-name">
+                        <h2>Diplomat Cars</h2>
+                        <p>لوحة إدارة نظام عرض السيارات</p>
+                    </div>
+                    <button id="refresh-btn" class="btn-primary full-width">
+                        <span class="btn-icon">🔄</span>
+                        <span>تحديث بيانات السيارات</span>
+                    </button>
+                </div>
+                <div id="page-cars" class="page">
+                    <div class="search-bar">
+                        <div class="search-input-wrap">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="cars-search" placeholder="بحث عن سيارة...">
+                        </div>
+                        <select id="cars-filter">
+                            <option value="all">جميع الفئات</option>
+                        </select>
+                    </div>
+                    <div id="cars-grid" class="cars-grid"></div>
+                    <div id="cars-empty" class="empty-state hidden">
+                        <div class="empty-icon">🚗</div>
+                        <p>لا توجد سيارات مطابقة</p>
+                    </div>
+                </div>
+                <div id="page-notifications" class="page">
+                    <div class="section-title">📨 إرسال إشعار يدوي</div>
+                    <form id="manual-notif-form" class="card">
+                        <label>عنوان الإشعار</label>
+                        <input type="text" id="notif-title" placeholder="أدخل عنوان الإشعار" required>
+                        <label>نص الرسالة</label>
+                        <textarea id="notif-message" rows="3" placeholder="أدخل نص الرسالة" required></textarea>
+                        <label>رابط الصورة (اختياري)</label>
+                        <input type="text" id="notif-image" placeholder="https://example.com/image.jpg">
+                        <button type="submit" class="btn-primary full-width">
+                            <span>📤</span>
+                            <span>إرسال الإشعار الآن</span>
+                        </button>
+                    </form>
+                    <div class="section-title">🔁 الإشعارات الدورية</div>
+                    <div id="scheduled-notifs" class="card-list">
+                        <div class="empty-card">لا توجد إشعارات دورية</div>
+                    </div>
+                    <button id="add-scheduled-btn" class="btn-secondary full-width">+ إضافة إشعار دوري جديد</button>
+                </div>
+                <div id="page-whatsapp" class="page">
+                    <div class="section-title">💬 أرقام الواتساب</div>
+                    <p class="section-desc">الأرقام التي سيستخدمها نظام الزوار للتواصل</p>
+                    <div id="whatsapp-numbers" class="card-list">
+                        <div class="empty-card">لا توجد أرقام مضافة</div>
+                    </div>
+                    <button id="add-whatsapp-btn" class="btn-secondary full-width">+ إضافة رقم واتساب جديد</button>
+                </div>
+                <div id="page-settings" class="page">
+                    <div class="section-title">🔒 تغيير كلمة المرور</div>
+                    <form id="change-password-form" class="card">
+                        <label>كلمة المرور الحالية</label>
+                        <input type="password" id="current-password" placeholder="أدخل كلمة المرور الحالية" autocomplete="off" required>
+                        <label>كلمة المرور الجديدة</label>
+                        <input type="password" id="new-password" placeholder="أدخل كلمة المرور الجديدة" autocomplete="off" required>
+                        <label>تأكيد كلمة المرور الجديدة</label>
+                        <input type="password" id="confirm-password" placeholder="أعد إدخال كلمة المرور الجديدة" autocomplete="off" required>
+                        <button type="submit" class="btn-primary full-width">تحديث كلمة المرور</button>
+                    </form>
+                    <div class="section-title">🛡️ إعادة ضبط الإعدادات</div>
+                    <div class="card">
+                        <p class="warning-text">⚠️ سيؤدي هذا إلى حذف جميع الإعدادات المحلية والعودة إلى شاشة الإعداد الأولي</p>
+                        <button id="reset-settings-btn" class="btn-danger full-width">إعادة ضبط جميع الإعدادات</button>
+                    </div>
+                </div>
+                <div id="page-about" class="page">
+                    <div class="about-card">
+                        <div class="about-logo">⚙️</div>
+                        <h2>Diplomat Cars</h2>
+                        <p class="about-subtitle">لوحة إدارة احترافية</p>
+                        <div class="about-info">
+                            <div class="about-row">
+                                <span>الإصدار</span>
+                                <span>1.0.0</span>
+                            </div>
+                            <div class="about-row">
+                                <span>النظام</span>
+                                <span>PWA</span>
+                            </div>
+                            <div class="about-row">
+                                <span>قاعدة البيانات</span>
+                                <span>Google Sheets</span>
+                            </div>
+                            <div class="about-row">
+                                <span>التخزين</span>
+                                <span>Firebase Storage</span>
+                            </div>
+                            <div class="about-row">
+                                <span>الإشعارات</span>
+                                <span>OneSignal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <div id="toast" class="toast hidden"></div>
+        <div id="modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <span class="modal-title"></span>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+    <script src="js/config.js"></script>
+    <script src="js/firebase.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pwa.js"></script>
+</body>
+                      </html>
