@@ -37,8 +37,9 @@ const CONFIG = {
 
 function getStorageItem(key, defaultValue) {
     try {
-        const value = localStorage.getItem(key);
-        return value !== null ? JSON.parse(value) : defaultValue;
+        var value = localStorage.getItem(key);
+        if (value === null || value === undefined) return defaultValue;
+        return JSON.parse(value);
     } catch (e) {
         return defaultValue;
     }
@@ -107,8 +108,12 @@ function isSetupDone() {
 }
 
 function generateCarKey(carName, category, model, branch) {
-    var str = (branch + '_' + carName + '_' + category + '_' + model).toLowerCase();
-    return str.replace(/[^a-z0-9\u0600-\u06FF_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    var str = (branch || '') + '_' + (carName || '') + '_' + (category || '') + '_' + (model || '');
+    str = str.toLowerCase();
+    str = str.replace(/[^a-z0-9\u0600-\u06FF_]/g, '_');
+    str = str.replace(/_+/g, '_');
+    str = str.replace(/^_|_$/g, '');
+    return str;
 }
 
 function getCarImageFileName(carKey) {
