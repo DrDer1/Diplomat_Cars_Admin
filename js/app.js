@@ -391,16 +391,27 @@
             app_id: appId,
             contents: { en: message },
             headings: { en: title },
-            included_segments: ['All']
+            included_segments: ['Total Subscriptions']
         };
         if (imageUrl && imageUrl.trim()) {
             payload.big_picture = imageUrl.trim();
+            payload.chrome_web_image = imageUrl.trim();
         }
         return fetch('https://onesignal.com/api/v1/notifications', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restApiKey },
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Authorization': 'Basic ' + restApiKey
+            },
             body: JSON.stringify(payload)
-        }).then(function(r) { return r.json(); });
+        }).then(function(response) {
+            if (!response.ok) {
+                return response.json().then(function(err) {
+                    throw new Error(err.errors ? err.errors.join(', ') : 'خطأ في الإرسال');
+                });
+            }
+            return response.json();
+        });
     }
 
     function renderScheduledNotifications() {
