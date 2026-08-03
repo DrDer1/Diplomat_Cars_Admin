@@ -16,39 +16,7 @@
 </head>
 <body>
     <div id="app">
-        <div id="setup-screen" class="screen">
-            <div class="setup-container">
-                <div class="setup-logo">⚙️</div>
-                <h2>الإعداد الأولي</h2>
-                <p>يرجى إدخال بيانات الاتصال لمرة واحدة فقط</p>
-                <form id="setup-form">
-                    <div class="form-section">
-                        <h3>Firebase Config</h3>
-                        <label>apiKey</label>
-                        <input type="text" id="fb-apiKey" placeholder="AIzaSy..." required>
-                        <label>authDomain</label>
-                        <input type="text" id="fb-authDomain" placeholder="project.firebaseapp.com" required>
-                        <label>projectId</label>
-                        <input type="text" id="fb-projectId" placeholder="project-id" required>
-                        <label>storageBucket</label>
-                        <input type="text" id="fb-storageBucket" placeholder="project.firebasestorage.app" required>
-                        <label>messagingSenderId</label>
-                        <input type="text" id="fb-messagingSenderId" placeholder="123456789" required>
-                        <label>appId</label>
-                        <input type="text" id="fb-appId" placeholder="1:123:web:abc" required>
-                    </div>
-                    <div class="form-section">
-                        <h3>OneSignal</h3>
-                        <label>App ID</label>
-                        <input type="text" id="os-appId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
-                        <label>REST API Key</label>
-                        <input type="text" id="os-restApiKey" placeholder="os_v2_..." required>
-                    </div>
-                    <button type="submit" class="btn-primary full-width">حفظ الإعدادات</button>
-                </form>
-            </div>
-        </div>
-        <div id="password-screen" class="screen hidden">
+        <div id="password-screen" class="screen">
             <div class="password-container">
                 <div class="setup-logo">🔒</div>
                 <h2>Diplomat Cars</h2>
@@ -57,18 +25,7 @@
                     <input type="password" id="password-input" placeholder="كلمة المرور" autocomplete="off" required>
                     <button type="submit" class="btn-primary full-width">دخول</button>
                 </form>
-            </div>
-        </div>
-        <div id="create-password-screen" class="screen hidden">
-            <div class="password-container">
-                <div class="setup-logo">🔐</div>
-                <h2>إنشاء كلمة المرور</h2>
-                <p>أنشئ كلمة مرور للوحة الإدارة</p>
-                <form id="create-password-form">
-                    <input type="password" id="new-admin-password" placeholder="كلمة المرور الجديدة" autocomplete="off" required>
-                    <input type="password" id="confirm-admin-password" placeholder="تأكيد كلمة المرور" autocomplete="off" required>
-                    <button type="submit" class="btn-primary full-width">حفظ كلمة المرور</button>
-                </form>
+                <p style="text-align:center;margin-top:12px;font-size:11px;color:#555;">كلمة المرور الافتراضية: admin</p>
             </div>
         </div>
         <div id="main-screen" class="screen hidden">
@@ -196,18 +153,38 @@
                         <input type="password" id="confirm-password" placeholder="أعد إدخال كلمة المرور الجديدة" autocomplete="off" required>
                         <button type="submit" class="btn-primary full-width">تحديث كلمة المرور</button>
                     </form>
+                    <div class="section-title">☁️ إعدادات Firebase</div>
+                    <form id="firebase-settings-form" class="card">
+                        <label>apiKey</label>
+                        <input type="text" id="settings-fb-apiKey">
+                        <label>authDomain</label>
+                        <input type="text" id="settings-fb-authDomain">
+                        <label>projectId</label>
+                        <input type="text" id="settings-fb-projectId">
+                        <label>storageBucket</label>
+                        <input type="text" id="settings-fb-storageBucket">
+                        <label>messagingSenderId</label>
+                        <input type="text" id="settings-fb-messagingSenderId">
+                        <label>appId</label>
+                        <input type="text" id="settings-fb-appId">
+                        <button type="submit" class="btn-primary full-width">حفظ إعدادات Firebase</button>
+                    </form>
+                    <div class="section-title">🔔 إعدادات OneSignal</div>
+                    <form id="onesignal-settings-form" class="card">
+                        <label>App ID</label>
+                        <input type="text" id="settings-os-appId">
+                        <label>REST API Key</label>
+                        <input type="text" id="settings-os-restApiKey">
+                        <button type="submit" class="btn-primary full-width">حفظ إعدادات OneSignal</button>
+                    </form>
                     <div class="section-title">📦 تصدير البيانات المشتركة</div>
                     <div class="card">
-                        <p style="font-size:13px;color:#aaa;margin-bottom:12px;">
-                            تصدير صور السيارات وأرقام الواتساب إلى ملف JSON مشترك بين نظام الإدارة ونظام الزوار
-                        </p>
-                        <button id="export-shared-data-btn" class="btn-primary full-width">
-                            📥 تصدير shared-data.json
-                        </button>
+                        <p style="font-size:13px;color:#aaa;margin-bottom:12px;">تصدير صور السيارات وأرقام الواتساب إلى ملف JSON مشترك بين نظام الإدارة ونظام الزوار</p>
+                        <button id="export-shared-data-btn" class="btn-primary full-width">📥 تصدير shared-data.json</button>
                     </div>
                     <div class="section-title">🛡️ إعادة ضبط الإعدادات</div>
                     <div class="card">
-                        <p class="warning-text">⚠️ سيؤدي هذا إلى حذف جميع الإعدادات المحلية والعودة إلى شاشة الإعداد الأولي</p>
+                        <p class="warning-text">⚠️ سيؤدي هذا إلى حذف جميع الإعدادات المحلية والعودة إلى كلمة المرور الافتراضية</p>
                         <button id="reset-settings-btn" class="btn-danger full-width">إعادة ضبط جميع الإعدادات</button>
                     </div>
                 </div>
@@ -217,26 +194,11 @@
                         <h2>Diplomat Cars</h2>
                         <p class="about-subtitle">لوحة إدارة احترافية</p>
                         <div class="about-info">
-                            <div class="about-row">
-                                <span>الإصدار</span>
-                                <span>1.0.0</span>
-                            </div>
-                            <div class="about-row">
-                                <span>النظام</span>
-                                <span>PWA</span>
-                            </div>
-                            <div class="about-row">
-                                <span>قاعدة البيانات</span>
-                                <span>Google Sheets</span>
-                            </div>
-                            <div class="about-row">
-                                <span>التخزين</span>
-                                <span>Firebase Storage</span>
-                            </div>
-                            <div class="about-row">
-                                <span>الإشعارات</span>
-                                <span>OneSignal</span>
-                            </div>
+                            <div class="about-row"><span>الإصدار</span><span>1.0.0</span></div>
+                            <div class="about-row"><span>النظام</span><span>PWA</span></div>
+                            <div class="about-row"><span>قاعدة البيانات</span><span>Google Sheets</span></div>
+                            <div class="about-row"><span>التخزين</span><span>Firebase Storage</span></div>
+                            <div class="about-row"><span>الإشعارات</span><span>OneSignal</span></div>
                         </div>
                     </div>
                 </div>
