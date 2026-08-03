@@ -1,9 +1,9 @@
-let firebaseApp = null;
-let firebaseStorage = null;
+var firebaseApp = null;
+var firebaseStorage = null;
 
 function initFirebase() {
-    const config = getFirebaseConfig();
-    if (!config) {
+    var config = getFirebaseConfig();
+    if (!config || !config.apiKey) {
         console.error('Firebase config not found');
         return false;
     }
@@ -12,10 +12,12 @@ function initFirebase() {
             console.error('Firebase SDK not loaded');
             return false;
         }
-        if (!firebaseApp) {
-            firebaseApp = firebase.initializeApp(config);
-            firebaseStorage = firebase.storage();
+        if (firebaseApp) {
+            firebaseApp = null;
+            firebaseStorage = null;
         }
+        firebaseApp = firebase.initializeApp(config);
+        firebaseStorage = firebase.storage();
         return true;
     } catch (e) {
         if (e.code === 'app/duplicate-app') {
@@ -36,7 +38,7 @@ function getStorageRef(path) {
 }
 
 function uploadCarImage(carKey, file) {
-    return new Promise((resolve, reject) => {
+    return new Promise(function(resolve, reject) {
         if (!initFirebase()) {
             reject(new Error('تعذر الاتصال بـ Firebase'));
             return;
@@ -45,26 +47,26 @@ function uploadCarImage(carKey, file) {
             reject(new Error('لم يتم اختيار ملف'));
             return;
         }
-        if (!CONFIG.ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        if (CONFIG.ALLOWED_IMAGE_TYPES.indexOf(file.type) === -1) {
             reject(new Error('نوع الملف غير مدعوم. الأنواع المدعومة: JPG, PNG, WebP'));
             return;
         }
         if (file.size > CONFIG.MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-            reject(new Error(`حجم الملف كبير جداً. الحد الأقصى: ${CONFIG.MAX_IMAGE_SIZE_MB}MB`));
+            reject(new Error('حجم الملف كبير جداً. الحد الأقصى: ' + CONFIG.MAX_IMAGE_SIZE_MB + 'MB'));
             return;
         }
-        const fileName = getCarImageFileName(carKey);
-        const fullPath = CONFIG.FIREBASE_STORAGE_PATH + '/' + fileName;
-        const storageRef = getStorageRef(fullPath);
+        var fileName = getCarImageFileName(carKey);
+        var fullPath = CONFIG.FIREBASE_STORAGE_PATH + '/' + fileName;
+        var storageRef = getStorageRef(fullPath);
         if (!storageRef) {
             reject(new Error('تعذر الاتصال بالتخزين'));
             return;
         }
-        const metadata = {
+        var metadata = {
             contentType: file.type,
             cacheControl: 'public,max-age=31536000'
         };
-        const uploadTask = storageRef.put(file, metadata);
+        var uploadTask = storageRef.put(file, metadata);
         uploadTask.on('state_changed',
             function(snapshot) {},
             function(error) {
@@ -82,44 +84,28 @@ function uploadCarImage(carKey, file) {
 }
 
 function deleteCarImage(carKey) {
-    return new Promise((resolve, reject) => {
-        if (!initFirebase()) {
-            resolve();
-            return;
-        }
-        const fileName = getCarImageFileName(carKey);
-        const fullPath = CONFIG.FIREBASE_STORAGE_PATH + '/' + fileName;
-        const storageRef = getStorageRef(fullPath);
-        if (!storageRef) {
-            resolve();
-            return;
-        }
+    return new Promise(function(resolve) {
+        if (!initFirebase()) { resolve(); return; }
+        var fileName = getCarImageFileName(carKey);
+        var fullPath = CONFIG.FIREBASE_STORAGE_PATH + '/' + fileName;
+        var storageRef = getStorageRef(fullPath);
+        if (!storageRef) { resolve(); return; }
         storageRef.delete().then(function() {
             resolve();
         }).catch(function(error) {
-            if (error.code === 'storage/object-not-found') {
-                resolve();
-            } else {
-                console.warn('Error deleting image:', error);
-                resolve();
-            }
+            if (error.code === 'storage/object-not-found') { resolve(); }
+            else { console.warn('Error deleting image:', error); resolve(); }
         });
     });
 }
 
 function getCarImageUrl(carKey) {
-    return new Promise((resolve) => {
-        if (!initFirebase()) {
-            resolve(null);
-            return;
-        }
-        const fileName = getCarImageFileName(carKey);
-        const fullPath = CONFIG.FIREBASE_STORAGE_PATH + '/' + fileName;
-        const storageRef = getStorageRef(fullPath);
-        if (!storageRef) {
-            resolve(null);
-            return;
-        }
+    return new Promise(function(resolve) {
+        if (!initFirebase()) { resolve(null); return; }
+        var fileName = getCarImageFileName(carKey);
+        var fullPath = CONFIG.FIREBASE_STORAGE_PATH + '/' + fileName;
+        var storageRef = getStorageRef(fullPath);
+        if (!storageRef) { resolve(null); return; }
         storageRef.getDownloadURL().then(function(url) {
             resolve(url);
         }).catch(function() {
@@ -129,28 +115,18 @@ function getCarImageUrl(carKey) {
 }
 
 function loadAllCarImages(carKeys) {
-    return new Promise((resolve) => {
-        if (!carKeys || carKeys.length === 0) {
-            resolve({});
-            return;
-        }
-        if (!initFirebase()) {
-            resolve({});
-            return;
-        }
-        const results = {};
-        let completed = 0;
+    return new Promise(function(resolve) {
+        if (!carKeys || carKeys.length === 0) { resolve({}); return; }
+        if (!initFirebase()) { resolve({}); return; }
+        var results = {};
+        var completed = 0;
         carKeys.forEach(function(carKey) {
             getCarImageUrl(carKey).then(function(url) {
                 results[carKey] = url;
                 completed++;
-                if (completed >= carKeys.length) {
-                    resolve(results);
-                }
+                if (completed >= carKeys.length) { resolve(results); }
             });
         });
-        setTimeout(function() {
-            resolve(results);
-        }, 10000);
+        setTimeout(function() { resolve(results); }, 10000);
     });
 }
