@@ -6,35 +6,24 @@
     var carImageUrls = {};
     var currentPage = 'home';
     var sidebarOpen = false;
-    var isOnline = navigator.onLine;
 
     var SHEETS = {
         rustaq: '1KIgAoTO0sbKtvVNt775ZCyuSAW8Bf8HbFyUXCY9pIV0',
         mabela: '1C_zsV_9l_SN0O5YN118OT49ng9H67sFIBWvk1Qr_3Gg'
     };
 
-    function $(selector) {
-        return document.querySelector(selector);
-    }
-
-    function $$(selector) {
-        return document.querySelectorAll(selector);
-    }
+    function $(selector) { return document.querySelector(selector); }
+    function $$(selector) { return document.querySelectorAll(selector); }
 
     var elements = {};
 
     function cacheElements() {
-        elements.setupScreen = $('#setup-screen');
         elements.passwordScreen = $('#password-screen');
-        elements.createPasswordScreen = $('#create-password-screen');
         elements.mainScreen = $('#main-screen');
-        elements.setupForm = $('#setup-form');
         elements.passwordForm = $('#password-form');
-        elements.createPasswordForm = $('#create-password-form');
         elements.sidebar = $('#sidebar');
         elements.overlay = $('#overlay');
         elements.menuToggle = $('#menu-toggle');
-        elements.content = $('#content');
         elements.carsGrid = $('#cars-grid');
         elements.carsEmpty = $('#cars-empty');
         elements.carsSearch = $('#cars-search');
@@ -48,6 +37,8 @@
         elements.whatsappNumbers = $('#whatsapp-numbers');
         elements.addWhatsappBtn = $('#add-whatsapp-btn');
         elements.changePasswordForm = $('#change-password-form');
+        elements.firebaseSettingsForm = $('#firebase-settings-form');
+        elements.onesignalSettingsForm = $('#onesignal-settings-form');
         elements.resetSettingsBtn = $('#reset-settings-btn');
         elements.exportSharedDataBtn = $('#export-shared-data-btn');
         elements.toast = $('#toast');
@@ -62,10 +53,8 @@
     }
 
     function showScreen(screen) {
-        var screens = [elements.setupScreen, elements.passwordScreen, elements.createPasswordScreen, elements.mainScreen];
-        screens.forEach(function(s) {
-            if (s) s.classList.add('hidden');
-        });
+        if (elements.passwordScreen) elements.passwordScreen.classList.add('hidden');
+        if (elements.mainScreen) elements.mainScreen.classList.add('hidden');
         if (screen) screen.classList.remove('hidden');
     }
 
@@ -121,22 +110,15 @@
             if (item.dataset.page === pageName) item.classList.add('active');
         });
         closeSidebar();
-        if (pageName === 'cars') {
-            renderCars();
-        }
-        if (pageName === 'notifications') {
-            renderScheduledNotifications();
-        }
-        if (pageName === 'whatsapp') {
-            renderWhatsAppNumbers();
-        }
-        if (pageName === 'home') {
-            updateHomeStats();
-        }
+        if (pageName === 'cars') renderCars();
+        if (pageName === 'notifications') renderScheduledNotifications();
+        if (pageName === 'whatsapp') renderWhatsAppNumbers();
+        if (pageName === 'settings') loadSettingsData();
+        if (pageName === 'home') updateHomeStats();
     }
 
     function updateHomeStats() {
-        var total = (carsData.rustaq ? carsData.rustaq.length : 0) + (carsData.mabela ? carsData.mabela.length : 0);
+        var total = (carsData.rustaq.length + carsData.mabela.length);
         if (elements.carsCount) elements.carsCount.textContent = total;
         if (elements.lastUpdate) {
             var lastUpdate = getStorageItem(CONFIG.STORAGE_KEYS.LAST_UPDATE, null);
@@ -162,14 +144,13 @@
             if (cat && ne.length >= 2) {
                 var carName = c[3] || '';
                 var carModel = c[2] || '';
-                var carColor = c[1] || '';
                 var carPrice = c[0] || '';
                 var carKey = generateCarKey(carName, cat, carModel, branch);
                 cars.push({
                     name: carName,
                     category: cat,
                     model: carModel,
-                    color: carColor,
+                    color: c[1] || '',
                     price: carPrice,
                     carKey: carKey,
                     branch: branch
@@ -210,7 +191,7 @@
             updateHomeStats();
             populateFilters();
             var total = carsData.rustaq.length + carsData.mabela.length;
-            showToast('تم تحميل ' + total + ' سيارة بنجاح', 'success');
+            showToast('تم تحميل ' + total + ' سيارة', 'success');
             if (currentPage === 'cars') renderCars();
         }).catch(function(error) {
             showToast('خطأ: ' + error.message, 'error');
@@ -284,12 +265,9 @@
             html += '</div></div>';
         });
         elements.carsGrid.innerHTML = html;
-        var carCards = $$('.car-card');
-        carCards.forEach(function(card) {
+        $$('.car-card').forEach(function(card) {
             card.addEventListener('click', function() {
-                var carKey = card.dataset.carkey;
-                var branch = card.dataset.branch;
-                openImageChangeModal(carKey, branch);
+                openImageChangeModal(card.dataset.carkey, card.dataset.branch);
             });
         });
     }
@@ -319,10 +297,7 @@
             if (uploadBtn && fileInput) {
                 uploadBtn.addEventListener('click', function() {
                     var file = fileInput.files[0];
-                    if (!file) {
-                        showToast('الرجاء اختيار صورة', 'error');
-                        return;
-                    }
+                    if (!file) { showToast('الرجاء اختيار صورة', 'error'); return; }
                     uploadBtn.disabled = true;
                     uploadBtn.textContent = 'جاري الرفع...';
                     uploadCarImage(carKey, file).then(function(url) {
@@ -366,9 +341,7 @@
     function loadCarImageUrls(carKeys) {
         var cachedMap = getCarImageMap();
         carImageUrls = {};
-        carKeys.forEach(function(key) {
-            carImageUrls[key] = cachedMap[key] || null;
-        });
+        carKeys.forEach(function(key) { carImageUrls[key] = cachedMap[key] || null; });
         if (typeof loadAllCarImages === 'function') {
             loadAllCarImages(carKeys).then(function(freshUrls) {
                 var updated = false;
@@ -381,9 +354,7 @@
                         }
                     }
                 });
-                if (updated) {
-                    setStorageItem(CONFIG.STORAGE_KEYS.CAR_IMAGE_MAP, cachedMap);
-                }
+                if (updated) setStorageItem(CONFIG.STORAGE_KEYS.CAR_IMAGE_MAP, cachedMap);
                 if (currentPage === 'cars') renderCars();
             });
         }
@@ -394,15 +365,8 @@
         var whatsappNumbers = getWhatsAppNumbers();
         var data = {
             whatsapp_numbers: {
-                rustaq: whatsappNumbers.rustaq || [
-                    {"phone": "96872222242", "label": "مالك المعرض"},
-                    {"phone": "96898825877", "label": "خدمة عملاء الرستاق"},
-                    {"phone": "96895096865", "label": "مدير فرع الرستاق"}
-                ],
-                mabela: whatsappNumbers.mabela || [
-                    {"phone": "96892256223", "label": "مبيعات المعبيلة"},
-                    {"phone": "96878080132", "label": "خدمة عملاء المعبيلة"}
-                ]
+                rustaq: whatsappNumbers.rustaq || [],
+                mabela: whatsappNumbers.mabela || []
             },
             car_images: imageMap,
             last_updated: new Date().toISOString()
@@ -410,21 +374,18 @@
         var blob = new Blob([JSON.stringify(data, null, 4)], {type: 'application/json'});
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
-        a.href = url;
-        a.download = 'shared-data.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast('تم تصدير shared-data.json. استبدل الملف في مجلد data/ في كلا المشروعين', 'success');
+        a.href = url; a.download = 'shared-data.json';
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+        showToast('تم تصدير shared-data.json', 'success');
     }
 
     function sendManualNotification(title, message, imageUrl) {
         var appId = getOneSignalAppId();
         var restApiKey = getOneSignalRestApiKey();
-        if (!appId || !restApiKey) {
-            showToast('بيانات OneSignal غير مكتملة', 'error');
-            return Promise.reject(new Error('OneSignal config missing'));
+        if (!appId || !restApiKey || restApiKey === 'YOUR_REST_API_KEY') {
+            showToast('الرجاء إدخال REST API Key في صفحة الإعدادات', 'error');
+            return Promise.reject(new Error('Missing REST API Key'));
         }
         var payload = {
             app_id: appId,
@@ -434,19 +395,12 @@
         };
         if (imageUrl && imageUrl.trim()) {
             payload.big_picture = imageUrl.trim();
-            payload.ios_attachments = { id1: imageUrl.trim() };
-            payload.chrome_web_image = imageUrl.trim();
         }
         return fetch('https://onesignal.com/api/v1/notifications', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + restApiKey
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restApiKey },
             body: JSON.stringify(payload)
-        }).then(function(response) {
-            return response.json();
-        });
+        }).then(function(r) { return r.json(); });
     }
 
     function renderScheduledNotifications() {
@@ -459,50 +413,29 @@
         var html = '';
         notifs.forEach(function(notif, index) {
             html += '<div class="card-item">';
-            html += '<div class="card-item-info">';
-            html += '<div class="card-item-title">' + (notif.title || '') + '</div>';
-            html += '<div class="card-item-subtitle">' + (notif.message || '').substring(0, 50) + ' | كل ' + notif.interval + ' ' + notif.intervalUnit + '</div>';
-            html += '</div>';
-            html += '<div class="card-item-actions">';
-            html += '<button class="btn-icon-sm delete" data-delete-scheduled="' + index + '">🗑️</button>';
-            html += '</div>';
+            html += '<div class="card-item-info"><div class="card-item-title">' + (notif.title || '') + '</div>';
+            html += '<div class="card-item-subtitle">' + (notif.message || '').substring(0, 50) + ' | كل ' + notif.interval + ' ' + notif.intervalUnit + '</div></div>';
+            html += '<div class="card-item-actions"><button class="btn-icon-sm delete" data-delete-scheduled="' + index + '">🗑️</button></div>';
             html += '</div>';
         });
         elements.scheduledNotifs.innerHTML = html;
         $$('[data-delete-scheduled]').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                var idx = parseInt(btn.dataset.deleteScheduled);
-                deleteScheduledNotification(idx);
+                var notifs = getScheduledNotifications();
+                notifs.splice(parseInt(btn.dataset.deleteScheduled), 1);
+                setStorageItem(CONFIG.STORAGE_KEYS.SCHEDULED_NOTIFICATIONS, notifs);
+                renderScheduledNotifications();
+                showToast('تم حذف الإشعار الدوري', 'success');
             });
         });
     }
 
-    function deleteScheduledNotification(index) {
-        var notifs = getScheduledNotifications();
-        notifs.splice(index, 1);
-        setStorageItem(CONFIG.STORAGE_KEYS.SCHEDULED_NOTIFICATIONS, notifs);
-        renderScheduledNotifications();
-        showToast('تم حذف الإشعار الدوري', 'success');
-    }
-
     function openAddScheduledModal() {
-        var html = '<label>عنوان الإشعار</label>';
-        html += '<input type="text" id="sched-title" placeholder="عنوان الإشعار" required>';
-        html += '<label>نص الرسالة</label>';
-        html += '<textarea id="sched-message" rows="3" placeholder="نص الرسالة" required></textarea>';
-        html += '<label>رابط الصورة (اختياري)</label>';
-        html += '<input type="text" id="sched-image" placeholder="https://...">';
-        html += '<label>التكرار</label>';
-        html += '<div style="display:flex;gap:8px;">';
-        html += '<input type="number" id="sched-interval" value="1" min="1" style="flex:1;">';
-        html += '<select id="sched-unit" style="flex:1;">';
-        html += '<option value="minutes">دقيقة</option>';
-        html += '<option value="hours">ساعة</option>';
-        html += '<option value="days">يوم</option>';
-        html += '<option value="weeks">أسبوع</option>';
-        html += '</select>';
-        html += '</div>';
-        html += '<button id="save-scheduled-btn" class="btn-primary full-width">حفظ الإشعار الدوري</button>';
+        var html = '<label>عنوان الإشعار</label><input type="text" id="sched-title" required>';
+        html += '<label>نص الرسالة</label><textarea id="sched-message" rows="3" required></textarea>';
+        html += '<label>رابط الصورة (اختياري)</label><input type="text" id="sched-image">';
+        html += '<label>التكرار</label><div style="display:flex;gap:8px;"><input type="number" id="sched-interval" value="1" min="1" style="flex:1;"><select id="sched-unit" style="flex:1;"><option value="hours">ساعة</option><option value="days">يوم</option><option value="weeks">أسبوع</option></select></div>';
+        html += '<button id="save-scheduled-btn" class="btn-primary full-width">حفظ</button>';
         openModal('إضافة إشعار دوري', html);
         setTimeout(function() {
             var saveBtn = $('#save-scheduled-btn');
@@ -510,26 +443,17 @@
                 saveBtn.addEventListener('click', function() {
                     var title = $('#sched-title').value.trim();
                     var message = $('#sched-message').value.trim();
-                    var image = $('#sched-image').value.trim();
-                    var interval = parseInt($('#sched-interval').value) || 1;
-                    var unit = $('#sched-unit').value;
-                    if (!title || !message) {
-                        showToast('العنوان والرسالة مطلوبان', 'error');
-                        return;
-                    }
+                    if (!title || !message) { showToast('العنوان والرسالة مطلوبان', 'error'); return; }
                     var notifs = getScheduledNotifications();
                     notifs.push({
-                        title: title,
-                        message: message,
-                        image: image,
-                        interval: interval,
-                        intervalUnit: unit,
-                        lastSent: null,
-                        createdAt: new Date().toISOString()
+                        title: title, message: message,
+                        image: $('#sched-image').value.trim(),
+                        interval: parseInt($('#sched-interval').value) || 1,
+                        intervalUnit: $('#sched-unit').value,
+                        lastSent: null, createdAt: new Date().toISOString()
                     });
                     setStorageItem(CONFIG.STORAGE_KEYS.SCHEDULED_NOTIFICATIONS, notifs);
-                    closeModal();
-                    renderScheduledNotifications();
+                    closeModal(); renderScheduledNotifications();
                     showToast('تم إضافة الإشعار الدوري', 'success');
                 });
             }
@@ -539,40 +463,25 @@
     function checkScheduledNotifications() {
         var notifs = getScheduledNotifications();
         if (notifs.length === 0) return;
-        var now = new Date();
-        var updated = false;
+        var now = new Date(), updated = false;
         notifs.forEach(function(notif) {
-            if (!notif.lastSent) {
-                notif.lastSent = now.toISOString();
-                updated = true;
-                sendScheduledNotification(notif);
-                return;
-            }
+            if (!notif.lastSent) { notif.lastSent = now.toISOString(); updated = true; sendScheduledNotification(notif); return; }
             var lastSent = new Date(notif.lastSent);
             var diffMs = now - lastSent;
             var intervalMs = notif.interval;
             switch (notif.intervalUnit) {
-                case 'minutes': intervalMs *= 60000; break;
                 case 'hours': intervalMs *= 3600000; break;
                 case 'days': intervalMs *= 86400000; break;
                 case 'weeks': intervalMs *= 604800000; break;
                 default: intervalMs *= 3600000;
             }
-            if (diffMs >= intervalMs) {
-                notif.lastSent = now.toISOString();
-                updated = true;
-                sendScheduledNotification(notif);
-            }
+            if (diffMs >= intervalMs) { notif.lastSent = now.toISOString(); updated = true; sendScheduledNotification(notif); }
         });
-        if (updated) {
-            setStorageItem(CONFIG.STORAGE_KEYS.SCHEDULED_NOTIFICATIONS, notifs);
-        }
+        if (updated) setStorageItem(CONFIG.STORAGE_KEYS.SCHEDULED_NOTIFICATIONS, notifs);
     }
 
     function sendScheduledNotification(notif) {
-        sendManualNotification(notif.title, notif.message, notif.image).catch(function(err) {
-            console.warn('Scheduled notification failed:', err);
-        });
+        sendManualNotification(notif.title, notif.message, notif.image).catch(function() {});
     }
 
     function renderWhatsAppNumbers() {
@@ -587,303 +496,188 @@
         var html = '';
         if (rustaqNums.length > 0) {
             html += '<div class="section-title" style="margin-top:0;">🏛️ فرع الرستاق</div>';
-            rustaqNums.forEach(function(number, index) {
-                html += '<div class="card-item">';
-                html += '<div class="card-item-info">';
-                html += '<div class="card-item-title">📱 ' + number.phone + '</div>';
-                html += '<div class="card-item-subtitle">' + (number.label || 'بدون تسمية') + '</div>';
-                html += '</div>';
-                html += '<div class="card-item-actions">';
-                html += '<button class="btn-icon-sm" data-edit-whatsapp="rustaq_' + index + '">✏️</button>';
-                html += '<button class="btn-icon-sm delete" data-delete-whatsapp="rustaq_' + index + '">🗑️</button>';
-                html += '</div>';
-                html += '</div>';
+            rustaqNums.forEach(function(n, i) {
+                html += '<div class="card-item"><div class="card-item-info"><div class="card-item-title">📱 ' + n.phone + '</div><div class="card-item-subtitle">' + (n.label || '') + '</div></div>';
+                html += '<div class="card-item-actions"><button class="btn-icon-sm" data-edit-w="rustaq_' + i + '">✏️</button><button class="btn-icon-sm delete" data-del-w="rustaq_' + i + '">🗑️</button></div></div>';
             });
         }
         if (mabelaNums.length > 0) {
             html += '<div class="section-title">🏛️ فرع المعبيلة</div>';
-            mabelaNums.forEach(function(number, index) {
-                html += '<div class="card-item">';
-                html += '<div class="card-item-info">';
-                html += '<div class="card-item-title">📱 ' + number.phone + '</div>';
-                html += '<div class="card-item-subtitle">' + (number.label || 'بدون تسمية') + '</div>';
-                html += '</div>';
-                html += '<div class="card-item-actions">';
-                html += '<button class="btn-icon-sm" data-edit-whatsapp="mabela_' + index + '">✏️</button>';
-                html += '<button class="btn-icon-sm delete" data-delete-whatsapp="mabela_' + index + '">🗑️</button>';
-                html += '</div>';
-                html += '</div>';
+            mabelaNums.forEach(function(n, i) {
+                html += '<div class="card-item"><div class="card-item-info"><div class="card-item-title">📱 ' + n.phone + '</div><div class="card-item-subtitle">' + (n.label || '') + '</div></div>';
+                html += '<div class="card-item-actions"><button class="btn-icon-sm" data-edit-w="mabela_' + i + '">✏️</button><button class="btn-icon-sm delete" data-del-w="mabela_' + i + '">🗑️</button></div></div>';
             });
         }
         elements.whatsappNumbers.innerHTML = html;
-        $$('[data-delete-whatsapp]').forEach(function(btn) {
+        $$('[data-del-w]').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                var parts = btn.dataset.deleteWhatsapp.split('_');
-                var branch = parts[0];
-                var idx = parseInt(parts[1]);
-                deleteWhatsAppNumber(branch, idx);
+                var parts = btn.dataset.delW.split('_');
+                if (!confirm('حذف هذا الرقم؟')) return;
+                var nums = getWhatsAppNumbers();
+                nums[parts[0]].splice(parseInt(parts[1]), 1);
+                setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, nums);
+                renderWhatsAppNumbers(); showToast('تم الحذف', 'success');
             });
         });
-        $$('[data-edit-whatsapp]').forEach(function(btn) {
+        $$('[data-edit-w]').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                var parts = btn.dataset.editWhatsapp.split('_');
-                var branch = parts[0];
-                var idx = parseInt(parts[1]);
-                openEditWhatsAppModal(branch, idx);
+                var parts = btn.dataset.editW.split('_');
+                var nums = getWhatsAppNumbers();
+                var num = nums[parts[0]][parseInt(parts[1])];
+                if (!num) return;
+                var h = '<p style="color:#aaa;margin-bottom:12px;">' + (parts[0] === 'rustaq' ? 'الرستاق' : 'المعبيلة') + '</p>';
+                h += '<label>الرقم</label><input type="text" id="wa-phone" value="' + num.phone + '">';
+                h += '<label>التسمية</label><input type="text" id="wa-label" value="' + (num.label || '') + '">';
+                h += '<button id="update-wa-btn" class="btn-primary full-width">تحديث</button>';
+                openModal('تعديل رقم', h);
+                setTimeout(function() {
+                    var b = $('#update-wa-btn');
+                    if (b) b.addEventListener('click', function() {
+                        nums[parts[0]][parseInt(parts[1])] = { phone: $('#wa-phone').value.trim(), label: $('#wa-label').value.trim() };
+                        setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, nums);
+                        closeModal(); renderWhatsAppNumbers(); showToast('تم التحديث', 'success');
+                    });
+                }, 200);
             });
         });
-    }
-
-    function deleteWhatsAppNumber(branch, index) {
-        if (!confirm('هل أنت متأكد من حذف هذا الرقم؟')) return;
-        var allNumbers = getWhatsAppNumbers();
-        if (allNumbers && allNumbers[branch]) {
-            allNumbers[branch].splice(index, 1);
-        }
-        setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, allNumbers);
-        renderWhatsAppNumbers();
-        showToast('تم حذف الرقم', 'success');
     }
 
     function openAddWhatsAppModal() {
-        var html = '<label>الفرع</label>';
-        html += '<select id="wa-branch"><option value="rustaq">الرستاق</option><option value="mabela">المعبيلة</option></select>';
-        html += '<label>رقم الواتساب</label>';
-        html += '<input type="text" id="wa-phone" placeholder="968XXXXXXXX" required>';
-        html += '<label>تسمية (اختياري)</label>';
-        html += '<input type="text" id="wa-label" placeholder="مثال: مبيعات، خدمة عملاء">';
-        html += '<button id="save-whatsapp-btn" class="btn-primary full-width">حفظ الرقم</button>';
-        openModal('إضافة رقم واتساب', html);
+        var html = '<label>الفرع</label><select id="wa-branch"><option value="rustaq">الرستاق</option><option value="mabela">المعبيلة</option></select>';
+        html += '<label>الرقم</label><input type="text" id="wa-phone" placeholder="968XXXXXXXX">';
+        html += '<label>التسمية</label><input type="text" id="wa-label" placeholder="مبيعات">';
+        html += '<button id="save-wa-btn" class="btn-primary full-width">حفظ</button>';
+        openModal('إضافة رقم', html);
         setTimeout(function() {
-            var saveBtn = $('#save-whatsapp-btn');
-            if (saveBtn) {
-                saveBtn.addEventListener('click', function() {
-                    var branch = $('#wa-branch').value;
-                    var phone = $('#wa-phone').value.trim();
-                    var label = $('#wa-label').value.trim();
-                    if (!phone) {
-                        showToast('الرجاء إدخال رقم الهاتف', 'error');
-                        return;
-                    }
-                    var allNumbers = getWhatsAppNumbers();
-                    if (!allNumbers) allNumbers = {};
-                    if (!allNumbers[branch]) allNumbers[branch] = [];
-                    allNumbers[branch].push({ phone: phone, label: label });
-                    setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, allNumbers);
-                    closeModal();
-                    renderWhatsAppNumbers();
-                    showToast('تم إضافة الرقم', 'success');
-                });
-            }
+            var b = $('#save-wa-btn');
+            if (b) b.addEventListener('click', function() {
+                var phone = $('#wa-phone').value.trim();
+                if (!phone) { showToast('أدخل الرقم', 'error'); return; }
+                var nums = getWhatsAppNumbers();
+                if (!nums[$('#wa-branch').value]) nums[$('#wa-branch').value] = [];
+                nums[$('#wa-branch').value].push({ phone: phone, label: $('#wa-label').value.trim() });
+                setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, nums);
+                closeModal(); renderWhatsAppNumbers(); showToast('تمت الإضافة', 'success');
+            });
         }, 200);
     }
 
-    function openEditWhatsAppModal(branch, index) {
-        var allNumbers = getWhatsAppNumbers();
-        var num = allNumbers && allNumbers[branch] ? allNumbers[branch][index] : null;
-        if (!num) return;
-        var html = '<p style="margin-bottom:12px;color:#aaa;">الفرع: ' + (branch === 'rustaq' ? 'الرستاق' : 'المعبيلة') + '</p>';
-        html += '<label>رقم الواتساب</label>';
-        html += '<input type="text" id="wa-phone" value="' + num.phone + '" required>';
-        html += '<label>تسمية (اختياري)</label>';
-        html += '<input type="text" id="wa-label" value="' + (num.label || '') + '">';
-        html += '<button id="update-whatsapp-btn" class="btn-primary full-width">تحديث الرقم</button>';
-        openModal('تعديل رقم واتساب', html);
-        setTimeout(function() {
-            var updateBtn = $('#update-whatsapp-btn');
-            if (updateBtn) {
-                updateBtn.addEventListener('click', function() {
-                    var phone = $('#wa-phone').value.trim();
-                    var label = $('#wa-label').value.trim();
-                    if (!phone) {
-                        showToast('الرجاء إدخال رقم الهاتف', 'error');
-                        return;
-                    }
-                    allNumbers[branch][index] = { phone: phone, label: label };
-                    setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, allNumbers);
-                    closeModal();
-                    renderWhatsAppNumbers();
-                    showToast('تم تحديث الرقم', 'success');
-                });
-            }
-        }, 200);
+    function loadSettingsData() {
+        var fb = getFirebaseConfig();
+        if (fb) {
+            var fbApiKey = $('#settings-fb-apiKey'); if (fbApiKey) fbApiKey.value = fb.apiKey || '';
+            var fbAuth = $('#settings-fb-authDomain'); if (fbAuth) fbAuth.value = fb.authDomain || '';
+            var fbProj = $('#settings-fb-projectId'); if (fbProj) fbProj.value = fb.projectId || '';
+            var fbStor = $('#settings-fb-storageBucket'); if (fbStor) fbStor.value = fb.storageBucket || '';
+            var fbMsg = $('#settings-fb-messagingSenderId'); if (fbMsg) fbMsg.value = fb.messagingSenderId || '';
+            var fbApp = $('#settings-fb-appId'); if (fbApp) fbApp.value = fb.appId || '';
+        }
+        var osApp = $('#settings-os-appId'); if (osApp) osApp.value = getOneSignalAppId();
+        var osKey = $('#settings-os-restApiKey'); if (osKey) osKey.value = getOneSignalRestApiKey();
     }
 
     function resetAllSettings() {
-        if (!confirm('⚠️ هل أنت متأكد من إعادة ضبط جميع الإعدادات؟\nسيتم حذف جميع البيانات المحلية وستحتاج إلى إعادة الإعداد من البداية.')) return;
+        if (!confirm('⚠️ إعادة ضبط جميع الإعدادات؟')) return;
         localStorage.clear();
-        showToast('تم إعادة ضبط الإعدادات. جاري إعادة التحميل...', 'success');
-        setTimeout(function() {
-            location.reload();
-        }, 1500);
+        showToast('تم إعادة الضبط', 'success');
+        setTimeout(function() { location.reload(); }, 1500);
     }
 
     function bindEvents() {
-        if (elements.menuToggle) {
-            elements.menuToggle.addEventListener('click', toggleSidebar);
-        }
-        if (elements.overlay) {
-            elements.overlay.addEventListener('click', closeSidebar);
-        }
+        if (elements.menuToggle) elements.menuToggle.addEventListener('click', toggleSidebar);
+        if (elements.overlay) elements.overlay.addEventListener('click', closeSidebar);
         elements.sidebarMenuItems.forEach(function(item) {
-            item.addEventListener('click', function() {
-                navigateTo(item.dataset.page);
-            });
+            item.addEventListener('click', function() { navigateTo(item.dataset.page); });
         });
         elements.branchTabBtns.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                switchBranch(btn.dataset.branch);
-            });
+            btn.addEventListener('click', function() { switchBranch(btn.dataset.branch); });
         });
-        if (elements.setupForm) {
-            elements.setupForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                var fbConfig = {
-                    apiKey: document.getElementById('fb-apiKey').value.trim(),
-                    authDomain: document.getElementById('fb-authDomain').value.trim(),
-                    projectId: document.getElementById('fb-projectId').value.trim(),
-                    storageBucket: document.getElementById('fb-storageBucket').value.trim(),
-                    messagingSenderId: document.getElementById('fb-messagingSenderId').value.trim(),
-                    appId: document.getElementById('fb-appId').value.trim()
-                };
-                var osAppId = document.getElementById('os-appId').value.trim();
-                var osRestApi = document.getElementById('os-restApiKey').value.trim();
-                if (!fbConfig.apiKey || !osAppId || !osRestApi) {
-                    showToast('جميع الحقول مطلوبة', 'error');
-                    return;
-                }
-                setStorageItem(CONFIG.STORAGE_KEYS.FIREBASE_CONFIG, fbConfig);
-                setStorageItem(CONFIG.STORAGE_KEYS.ONESIGNAL_APP_ID, osAppId);
-                setStorageItem(CONFIG.STORAGE_KEYS.ONESIGNAL_REST_API, osRestApi);
-                setStorageItem(CONFIG.STORAGE_KEYS.SETUP_DONE, true);
-                showScreen(elements.createPasswordScreen);
-            });
-        }
-        if (elements.createPasswordForm) {
-            elements.createPasswordForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                var pass1 = document.getElementById('new-admin-password').value;
-                var pass2 = document.getElementById('confirm-admin-password').value;
-                if (!pass1 || pass1.length < 4) {
-                    showToast('كلمة المرور يجب أن تكون 4 أحرف على الأقل', 'error');
-                    return;
-                }
-                if (pass1 !== pass2) {
-                    showToast('كلمتا المرور غير متطابقتين', 'error');
-                    return;
-                }
-                setStorageItem(CONFIG.STORAGE_KEYS.ADMIN_PASSWORD, pass1);
-                showToast('تم إنشاء كلمة المرور بنجاح', 'success');
-                enterMainScreen();
-            });
-        }
+
         if (elements.passwordForm) {
             elements.passwordForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                var enteredPassword = document.getElementById('password-input').value;
-                var storedPassword = getAdminPassword();
-                if (enteredPassword === storedPassword) {
+                if (document.getElementById('password-input').value === getAdminPassword()) {
                     document.getElementById('password-input').value = '';
                     enterMainScreen();
                 } else {
                     showToast('كلمة المرور غير صحيحة', 'error');
-                    document.getElementById('password-input').value = '';
                 }
             });
         }
-        if (elements.refreshBtn) {
-            elements.refreshBtn.addEventListener('click', function() {
-                loadAllCarsData();
-            });
-        }
-        if (elements.carsSearch) {
-            elements.carsSearch.addEventListener('input', function() {
-                renderCars();
-            });
-        }
-        if (elements.carsFilter) {
-            elements.carsFilter.addEventListener('change', function() {
-                renderCars();
-            });
-        }
+
+        if (elements.refreshBtn) elements.refreshBtn.addEventListener('click', loadAllCarsData);
+        if (elements.carsSearch) elements.carsSearch.addEventListener('input', renderCars);
+        if (elements.carsFilter) elements.carsFilter.addEventListener('change', renderCars);
+
         if (elements.manualNotifForm) {
             elements.manualNotifForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                var title = document.getElementById('notif-title').value.trim();
-                var message = document.getElementById('notif-message').value.trim();
-                var image = document.getElementById('notif-image').value.trim();
-                if (!title || !message) {
-                    showToast('العنوان والرسالة مطلوبان', 'error');
-                    return;
-                }
-                var submitBtn = elements.manualNotifForm.querySelector('button[type="submit"]');
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'جاري الإرسال...';
-                sendManualNotification(title, message, image).then(function() {
-                    showToast('تم إرسال الإشعار بنجاح', 'success');
+                var title = $('#notif-title').value.trim();
+                var message = $('#notif-message').value.trim();
+                if (!title || !message) { showToast('العنوان والرسالة مطلوبان', 'error'); return; }
+                var btn = elements.manualNotifForm.querySelector('button');
+                btn.disabled = true; btn.textContent = 'جاري الإرسال...';
+                sendManualNotification(title, message, $('#notif-image').value.trim()).then(function() {
+                    showToast('تم الإرسال', 'success');
                     elements.manualNotifForm.reset();
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span>📤</span><span>إرسال الإشعار الآن</span>';
+                    btn.disabled = false; btn.innerHTML = '<span>📤</span><span>إرسال الإشعار الآن</span>';
                 }).catch(function(err) {
-                    showToast('فشل الإرسال: ' + err.message, 'error');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span>📤</span><span>إرسال الإشعار الآن</span>';
+                    showToast('فشل: ' + err.message, 'error');
+                    btn.disabled = false; btn.innerHTML = '<span>📤</span><span>إرسال الإشعار الآن</span>';
                 });
             });
         }
-        if (elements.addScheduledBtn) {
-            elements.addScheduledBtn.addEventListener('click', openAddScheduledModal);
-        }
-        if (elements.addWhatsappBtn) {
-            elements.addWhatsappBtn.addEventListener('click', openAddWhatsAppModal);
-        }
+
+        if (elements.addScheduledBtn) elements.addScheduledBtn.addEventListener('click', openAddScheduledModal);
+        if (elements.addWhatsappBtn) elements.addWhatsappBtn.addEventListener('click', openAddWhatsAppModal);
+
         if (elements.changePasswordForm) {
             elements.changePasswordForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                var currentPass = document.getElementById('current-password').value;
-                var newPass = document.getElementById('new-password').value;
-                var confirmPass = document.getElementById('confirm-password').value;
-                var storedPassword = getAdminPassword();
-                if (currentPass !== storedPassword) {
-                    showToast('كلمة المرور الحالية غير صحيحة', 'error');
-                    return;
-                }
-                if (!newPass || newPass.length < 4) {
-                    showToast('كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل', 'error');
-                    return;
-                }
-                if (newPass !== confirmPass) {
-                    showToast('كلمتا المرور غير متطابقتين', 'error');
-                    return;
-                }
-                setStorageItem(CONFIG.STORAGE_KEYS.ADMIN_PASSWORD, newPass);
+                var curr = $('#current-password').value;
+                var newP = $('#new-password').value;
+                var conf = $('#confirm-password').value;
+                if (curr !== getAdminPassword()) { showToast('كلمة المرور الحالية غير صحيحة', 'error'); return; }
+                if (!newP || newP.length < 4) { showToast('كلمة المرور الجديدة قصيرة', 'error'); return; }
+                if (newP !== conf) { showToast('كلمتا المرور غير متطابقتين', 'error'); return; }
+                setStorageItem(CONFIG.STORAGE_KEYS.ADMIN_PASSWORD, newP);
                 elements.changePasswordForm.reset();
-                showToast('تم تحديث كلمة المرور بنجاح', 'success');
+                showToast('تم تحديث كلمة المرور', 'success');
             });
         }
-        if (elements.resetSettingsBtn) {
-            elements.resetSettingsBtn.addEventListener('click', resetAllSettings);
+
+        if (elements.firebaseSettingsForm) {
+            elements.firebaseSettingsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var config = {
+                    apiKey: $('#settings-fb-apiKey').value.trim(),
+                    authDomain: $('#settings-fb-authDomain').value.trim(),
+                    projectId: $('#settings-fb-projectId').value.trim(),
+                    storageBucket: $('#settings-fb-storageBucket').value.trim(),
+                    messagingSenderId: $('#settings-fb-messagingSenderId').value.trim(),
+                    appId: $('#settings-fb-appId').value.trim()
+                };
+                setStorageItem(CONFIG.STORAGE_KEYS.FIREBASE_CONFIG, config);
+                if (typeof initFirebase === 'function') initFirebase();
+                showToast('تم حفظ إعدادات Firebase', 'success');
+            });
         }
-        if (elements.exportSharedDataBtn) {
-            elements.exportSharedDataBtn.addEventListener('click', exportSharedData);
+
+        if (elements.onesignalSettingsForm) {
+            elements.onesignalSettingsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                setStorageItem(CONFIG.STORAGE_KEYS.ONESIGNAL_APP_ID, $('#settings-os-appId').value.trim());
+                setStorageItem(CONFIG.STORAGE_KEYS.ONESIGNAL_REST_API, $('#settings-os-restApiKey').value.trim());
+                showToast('تم حفظ إعدادات OneSignal', 'success');
+            });
         }
-        if (elements.modalClose) {
-            elements.modalClose.addEventListener('click', closeModal);
-        }
-        if (elements.modalBackdrop) {
-            elements.modalBackdrop.addEventListener('click', closeModal);
-        }
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
-        });
-        window.addEventListener('online', function() {
-            isOnline = true;
-            showToast('تم استعادة الاتصال بالإنترنت', 'success');
-        });
-        window.addEventListener('offline', function() {
-            isOnline = false;
-            showToast('أنت غير متصل بالإنترنت', 'error');
-        });
+
+        if (elements.resetSettingsBtn) elements.resetSettingsBtn.addEventListener('click', resetAllSettings);
+        if (elements.exportSharedDataBtn) elements.exportSharedDataBtn.addEventListener('click', exportSharedData);
+        if (elements.modalClose) elements.modalClose.addEventListener('click', closeModal);
+        if (elements.modalBackdrop) elements.modalBackdrop.addEventListener('click', closeModal);
+
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
         document.addEventListener('click', function(e) {
             if (sidebarOpen && elements.sidebar && elements.menuToggle && !elements.sidebar.contains(e.target) && e.target !== elements.menuToggle) {
                 closeSidebar();
@@ -893,27 +687,15 @@
 
     function enterMainScreen() {
         showScreen(elements.mainScreen);
-        if (typeof initFirebase === 'function') {
-            initFirebase();
-        }
+        if (typeof initFirebase === 'function') initFirebase();
         loadAllCarsData();
         updateHomeStats();
-        setInterval(function() {
-            checkScheduledNotifications();
-        }, 30000);
+        setInterval(checkScheduledNotifications, 60000);
     }
 
     function init() {
         cacheElements();
         bindEvents();
-        if (!isSetupDone()) {
-            showScreen(elements.setupScreen);
-            return;
-        }
-        if (!getAdminPassword()) {
-            showScreen(elements.createPasswordScreen);
-            return;
-        }
         showScreen(elements.passwordScreen);
     }
 
