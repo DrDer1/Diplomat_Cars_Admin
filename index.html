@@ -44,11 +44,6 @@
                         <label>REST API Key</label>
                         <input type="text" id="os-restApiKey" placeholder="os_v2_..." required>
                     </div>
-                    <div class="form-section">
-                        <h3>Google Sheets</h3>
-                        <label>رابط CSV العام</label>
-                        <input type="text" id="gs-csvUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=0&single=true&output=csv" required>
-                    </div>
                     <button type="submit" class="btn-primary full-width">حفظ الإعدادات</button>
                 </form>
             </div>
@@ -122,7 +117,7 @@
                             <div class="stat-icon">🚗</div>
                             <div class="stat-info">
                                 <span class="stat-value" id="cars-count">0</span>
-                                <span class="stat-label">عدد السيارات</span>
+                                <span class="stat-label">إجمالي السيارات</span>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -143,6 +138,10 @@
                     </button>
                 </div>
                 <div id="page-cars" class="page">
+                    <div class="branch-tabs-admin">
+                        <button class="branch-tab-btn active" data-branch="rustaq">🏛️ فرع الرستاق</button>
+                        <button class="branch-tab-btn" data-branch="mabela">🏛️ فرع المعبيلة</button>
+                    </div>
                     <div class="search-bar">
                         <div class="search-input-wrap">
                             <span class="search-icon">🔍</span>
@@ -197,6 +196,15 @@
                         <input type="password" id="confirm-password" placeholder="أعد إدخال كلمة المرور الجديدة" autocomplete="off" required>
                         <button type="submit" class="btn-primary full-width">تحديث كلمة المرور</button>
                     </form>
+                    <div class="section-title">📦 تصدير البيانات المشتركة</div>
+                    <div class="card">
+                        <p style="font-size:13px;color:#aaa;margin-bottom:12px;">
+                            تصدير صور السيارات وأرقام الواتساب إلى ملف JSON مشترك بين نظام الإدارة ونظام الزوار
+                        </p>
+                        <button id="export-shared-data-btn" class="btn-primary full-width">
+                            📥 تصدير shared-data.json
+                        </button>
+                    </div>
                     <div class="section-title">🛡️ إعادة ضبط الإعدادات</div>
                     <div class="card">
                         <p class="warning-text">⚠️ سيؤدي هذا إلى حذف جميع الإعدادات المحلية والعودة إلى شاشة الإعداد الأولي</p>
