@@ -1,11 +1,17 @@
 (function() {
     'use strict';
 
-    let carsData = [];
+    let carsData = { rustaq: [], mabela: [] };
+    let currentBranch = 'rustaq';
     let carImageUrls = {};
     let currentPage = 'home';
     let sidebarOpen = false;
     let isOnline = navigator.onLine;
+
+    const SHEETS = {
+        rustaq: '1KIgAoTO0sbKtvVNt775ZCyuSAW8Bf8HbFyUXCY9pIV0',
+        mabela: '1C_zsV_9l_SN0O5YN118OT49ng9H67sFIBWvk1Qr_3Gg'
+    };
 
     const $ = function(selector) {
         return document.querySelector(selector);
@@ -108,8 +114,8 @@
             if (item.dataset.page === pageName) item.classList.add('active');
         });
         closeSidebar();
-        if (pageName === 'cars' && carsData.length === 0) {
-            loadCarsData();
+        if (pageName === 'cars') {
+            renderCars();
         }
         if (pageName === 'notifications') {
             renderScheduledNotifications();
@@ -123,103 +129,84 @@
     }
 
     function updateHomeStats() {
-        if (elements.carsCount) elements.carsCount.textContent = carsData.length;
+        var total = (carsData.rustaq.length + carsData.mabela.length);
+        if (elements.carsCount) elements.carsCount.textContent = total;
         if (elements.lastUpdate) {
             var lastUpdate = getStorageItem(CONFIG.STORAGE_KEYS.LAST_UPDATE, null);
             elements.lastUpdate.textContent = lastUpdate ? formatTimeAgo(lastUpdate) : '--:--';
         }
     }
 
-    function parseCSV(csvText) {
+    function parseCSV(csvText, branch) {
         var lines = csvText.trim().split('\n');
         if (lines.length < 2) return [];
-        var headers = parseCSVLine(lines[0]);
-        var nameIdx = headers.findIndex(function(h) { return h.toLowerCase().includes('name') || h === 'Car Name'; });
-        var catIdx = headers.findIndex(function(h) { return h.toLowerCase().includes('categor') || h.toLowerCase().includes('categ') || h === 'Category'; });
-        var modelIdx = headers.findIndex(function(h) { return h.toLowerCase().includes('model') || h === 'Model'; });
-        var colorIdx = headers.findIndex(function(h) { return h.toLowerCase().includes('color') || h === 'Color'; });
-        var priceIdx = headers.findIndex(function(h) { return h.toLowerCase().includes('price') || h === 'Price'; });
-        var linkIdx = headers.findIndex(function(h) { return h.toLowerCase().includes('link') || h === 'Link'; });
         var cars = [];
-        for (var i = 1; i < lines.length; i++) {
-            var values = parseCSVLine(lines[i]);
-            if (values.length === 0) continue;
-            var carName = nameIdx >= 0 ? (values[nameIdx] || '').trim() : '';
-            if (!carName) continue;
-            var category = catIdx >= 0 ? (values[catIdx] || '').trim() : '';
-            var model = modelIdx >= 0 ? (values[modelIdx] || '').trim() : '';
-            var color = colorIdx >= 0 ? (values[colorIdx] || '').trim() : '';
-            var price = priceIdx >= 0 ? (values[priceIdx] || '').trim() : '';
-            var link = linkIdx >= 0 ? (values[linkIdx] || '').trim() : '';
-            var carKey = generateCarKey(carName, category, model);
-            cars.push({
-                name: carName,
-                category: category,
-                model: model,
-                color: color,
-                price: price,
-                link: link,
-                carKey: carKey
-            });
+        var cat = 'أخرى';
+        for (var i = 0; i < lines.length; i++) {
+            var l = lines[i].trim();
+            if (!l) continue;
+            var c = l.split(',').map(function(x) { return x.replace(/^"|"$/g, '').trim(); });
+            var ne = c.filter(function(x) { return x !== ''; });
+            if (ne.length === 0) continue;
+            if (ne.length === 1 && !/^\d+$/.test(c[0]) && !/^(19|20)\d{2}$/.test(c[0]) && c[0].length < 50) {
+                cat = c[0].trim();
+                continue;
+            }
+            if (cat && ne.length >= 2) {
+                var carName = c[3] || '';
+                var carModel = c[2] || '';
+                var carColor = c[1] || '';
+                var carPrice = c[0] || '';
+                var carImage = c[4] || '';
+                var carKey = generateCarKey(carName, cat, carModel, branch);
+                cars.push({
+                    name: carName,
+                    category: cat,
+                    model: carModel,
+                    color: carColor,
+                    price: carPrice,
+                    image: carImage,
+                    carKey: carKey,
+                    branch: branch
+                });
+            }
         }
+        if (cars.length > 0) cars.pop();
         return cars;
     }
 
-    function parseCSVLine(line) {
-        var result = [];
-        var current = '';
-        var inQuotes = false;
-        for (var i = 0; i < line.length; i++) {
-            var ch = line[i];
-            if (inQuotes) {
-                if (ch === '"') {
-                    if (i + 1 < line.length && line[i + 1] === '"') {
-                        current += '"';
-                        i++;
-                    } else {
-                        inQuotes = false;
-                    }
-                } else {
-                    current += ch;
-                }
-            } else {
-                if (ch === '"') {
-                    inQuotes = true;
-                } else if (ch === ',') {
-                    result.push(current);
-                    current = '';
-                } else {
-                    current += ch;
-                }
-            }
-        }
-        result.push(current);
-        return result;
-    }
-
-    function fetchCarsFromSheets() {
-        var csvUrl = getGoogleSheetsCsvUrl();
-        var proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(csvUrl);
+    function fetchCarsFromSheets(branch) {
+        var sheetId = SHEETS[branch];
+        var url = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv';
+        var proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
         return fetch(proxyUrl)
             .then(function(response) {
                 if (!response.ok) throw new Error('فشل الاتصال بـ Google Sheets');
                 return response.text();
             })
             .then(function(csvText) {
-                return parseCSV(csvText);
+                return parseCSV(csvText, branch);
             });
     }
 
-    function loadCarsData() {
+    function loadAllCarsData() {
         showToast('جاري تحميل بيانات السيارات...', '');
-        fetchCarsFromSheets().then(function(cars) {
-            carsData = cars;
+        Promise.all([
+            fetchCarsFromSheets('rustaq'),
+            fetchCarsFromSheets('mabela')
+        ]).then(function(results) {
+            carsData.rustaq = results[0];
+            carsData.mabela = results[1];
             setStorageItem(CONFIG.STORAGE_KEYS.LAST_UPDATE, new Date().toISOString());
+            var allCarKeys = [];
+            carsData.rustaq.forEach(function(c) { allCarKeys.push(c.carKey); });
+            carsData.mabela.forEach(function(c) { allCarKeys.push(c.carKey); });
+            loadCarImageUrls(allCarKeys);
             updateHomeStats();
             populateFilters();
-            renderCars();
-            checkForNewCars(cars);
-            showToast('تم تحميل ' + cars.length + ' سيارة بنجاح', 'success');
+            var total = carsData.rustaq.length + carsData.mabela.length;
+            showToast('تم تحميل ' + total + ' سيارة بنجاح (الرستاق: ' + carsData.rustaq.length + ' | المعبيلة: ' + carsData.mabela.length + ')', 'success');
+            if (currentPage === 'cars') renderCars();
         }).catch(function(error) {
             showToast('خطأ: ' + error.message, 'error');
         });
@@ -228,7 +215,8 @@
     function populateFilters() {
         if (!elements.carsFilter) return;
         var categories = [];
-        carsData.forEach(function(car) {
+        var allCars = carsData[currentBranch];
+        allCars.forEach(function(car) {
             if (car.category && categories.indexOf(car.category) === -1) {
                 categories.push(car.category);
             }
@@ -246,7 +234,8 @@
     function getFilteredCars() {
         var searchTerm = elements.carsSearch ? elements.carsSearch.value.trim().toLowerCase() : '';
         var filterCat = elements.carsFilter ? elements.carsFilter.value : 'all';
-        return carsData.filter(function(car) {
+        var allCars = carsData[currentBranch];
+        return allCars.filter(function(car) {
             var matchSearch = true;
             if (searchTerm) {
                 matchSearch = car.name.toLowerCase().includes(searchTerm) ||
@@ -271,11 +260,11 @@
         filtered.forEach(function(car) {
             var imgUrl = carImageUrls[car.carKey] || '';
             var imgSrc = imgUrl ? imgUrl : 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'150\' fill=\'%23333\'%3E%3Crect width=\'200\' height=\'150\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23555\' font-size=\'14\'%3E🚗%3C/text%3E%3C/svg%3E';
-            html += '<div class="car-card" data-carkey="' + car.carKey + '">';
+            html += '<div class="car-card" data-carkey="' + car.carKey + '" data-branch="' + car.branch + '">';
             html += '<img class="car-card-image" src="' + imgSrc + '" alt="' + car.name + '" loading="lazy">';
             html += '<div class="car-card-info">';
             html += '<div class="car-card-name">' + car.name + '</div>';
-            html += '<div class="car-card-category">' + car.category + ' | ' + car.model + '</div>';
+            html += '<div class="car-card-category">' + car.category + ' | ' + car.model + ' | ' + (car.branch === 'rustaq' ? 'الرستاق' : 'المعبيلة') + '</div>';
             html += '<div class="car-card-price">' + (car.price ? formatPrice(car.price) + ' ريال' : '') + '</div>';
             html += '</div></div>';
         });
@@ -284,20 +273,22 @@
         carCards.forEach(function(card) {
             card.addEventListener('click', function() {
                 var carKey = card.dataset.carkey;
-                openImageChangeModal(carKey);
+                var branch = card.dataset.branch;
+                openImageChangeModal(carKey, branch);
             });
         });
     }
 
-    function openImageChangeModal(carKey) {
-        var car = carsData.find(function(c) { return c.carKey === carKey; });
+    function openImageChangeModal(carKey, branch) {
+        var allCars = carsData[branch];
+        var car = allCars.find(function(c) { return c.carKey === carKey; });
         if (!car) return;
         var currentImg = carImageUrls[carKey] || '';
         var imgPreview = currentImg ? '<img src="' + currentImg + '" style="width:100%;border-radius:8px;margin-bottom:12px;">' :
             '<div style="width:100%;aspect-ratio:4/3;background:#222;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:40px;">🚗</div>';
         var html = '<div style="text-align:center;">';
         html += '<p style="margin-bottom:8px;font-weight:600;">' + car.name + '</p>';
-        html += '<p style="margin-bottom:12px;color:#aaa;font-size:13px;">' + car.category + ' | ' + car.model + '</p>';
+        html += '<p style="margin-bottom:12px;color:#aaa;font-size:13px;">' + car.category + ' | ' + car.model + ' | ' + (branch === 'rustaq' ? 'فرع الرستاق' : 'فرع المعبيلة') + '</p>';
         html += imgPreview;
         html += '<input type="file" id="image-file-input" accept="image/jpeg,image/png,image/webp" style="margin-bottom:12px;">';
         html += '<button id="upload-image-btn" class="btn-primary full-width" style="margin-top:0;">رفع الصورة</button>';
@@ -326,7 +317,7 @@
                         setStorageItem(CONFIG.STORAGE_KEYS.CAR_IMAGE_MAP, imageMap);
                         showToast('تم رفع الصورة بنجاح', 'success');
                         closeModal();
-                        renderCars();
+                        if (currentPage === 'cars') renderCars();
                     }).catch(function(error) {
                         showToast(error.message, 'error');
                         uploadBtn.disabled = false;
@@ -346,7 +337,7 @@
                         setStorageItem(CONFIG.STORAGE_KEYS.CAR_IMAGE_MAP, imageMap);
                         showToast('تم حذف الصورة', 'success');
                         closeModal();
-                        renderCars();
+                        if (currentPage === 'cars') renderCars();
                     }).catch(function() {
                         showToast('حدث خطأ أثناء الحذف', 'error');
                         deleteBtn.disabled = false;
@@ -357,8 +348,7 @@
         }, 200);
     }
 
-    function loadCarImageUrls() {
-        var carKeys = carsData.map(function(c) { return c.carKey; });
+    function loadCarImageUrls(carKeys) {
         var cachedMap = getCarImageMap();
         carImageUrls = {};
         carKeys.forEach(function(key) {
@@ -378,50 +368,38 @@
             if (updated) {
                 setStorageItem(CONFIG.STORAGE_KEYS.CAR_IMAGE_MAP, cachedMap);
             }
-            renderCars();
+            if (currentPage === 'cars') renderCars();
         });
     }
 
-    function checkForNewCars(newCars) {
-        var lastKnown = getLastKnownCars();
-        var lastKnownKeys = lastKnown.map(function(c) { return c.carKey; });
-        var newCarList = newCars.filter(function(c) {
-            return lastKnownKeys.indexOf(c.carKey) === -1;
-        });
-        setStorageItem(CONFIG.STORAGE_KEYS.LAST_KNOWN_CARS, newCars.map(function(c) {
-            return { carKey: c.carKey, name: c.name, category: c.category, model: c.model, price: c.price };
-        }));
-        if (newCarList.length > 0 && lastKnown.length > 0) {
-            newCarList.forEach(function(car) {
-                sendNewCarNotification(car);
-            });
-        }
-    }
-
-    function sendNewCarNotification(car) {
-        var appId = getOneSignalAppId();
-        var restApiKey = getOneSignalRestApiKey();
-        if (!appId || !restApiKey) return;
-        var message = '🚗 ' + car.name + '\n';
-        if (car.category) message += 'الفئة: ' + car.category + '\n';
-        if (car.model) message += 'الموديل: ' + car.model + '\n';
-        if (car.price) message += 'السعر: ' + formatPrice(car.price) + ' ريال';
-        var payload = {
-            app_id: appId,
-            contents: { en: message },
-            headings: { en: 'سيارة جديدة! 🆕' },
-            included_segments: ['All']
-        };
-        fetch('https://onesignal.com/api/v1/notifications', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + restApiKey
+    function exportSharedData() {
+        var imageMap = getCarImageMap();
+        var whatsappNumbers = getWhatsAppNumbers();
+        var data = {
+            whatsapp_numbers: {
+                rustaq: whatsappNumbers.rustaq || [
+                    {"phone": "96872222242", "label": "مالك المعرض"},
+                    {"phone": "96898825877", "label": "خدمة عملاء الرستاق"},
+                    {"phone": "96895096865", "label": "مدير فرع الرستاق"}
+                ],
+                mabela: whatsappNumbers.mabela || [
+                    {"phone": "96892256223", "label": "مبيعات المعبيلة"},
+                    {"phone": "96878080132", "label": "خدمة عملاء المعبيلة"}
+                ]
             },
-            body: JSON.stringify(payload)
-        }).catch(function(err) {
-            console.warn('Failed to send new car notification:', err);
-        });
+            car_images: imageMap,
+            last_updated: new Date().toISOString()
+        };
+        var blob = new Blob([JSON.stringify(data, null, 4)], {type: 'application/json'});
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'shared-data.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('تم تصدير shared-data.json. استبدل الملف في مجلد data/ في كلا المشروعين', 'success');
     }
 
     function sendManualNotification(title, message, imageUrl) {
@@ -582,51 +560,79 @@
 
     function renderWhatsAppNumbers() {
         if (!elements.whatsappNumbers) return;
-        var numbers = getWhatsAppNumbers();
-        if (numbers.length === 0) {
+        var allNumbers = getWhatsAppNumbers();
+        var rustaqNums = allNumbers.rustaq || [];
+        var mabelaNums = allNumbers.mabela || [];
+        if (rustaqNums.length === 0 && mabelaNums.length === 0) {
             elements.whatsappNumbers.innerHTML = '<div class="empty-card">لا توجد أرقام مضافة</div>';
             return;
         }
         var html = '';
-        numbers.forEach(function(number, index) {
-            html += '<div class="card-item">';
-            html += '<div class="card-item-info">';
-            html += '<div class="card-item-title">📱 ' + number.phone + '</div>';
-            html += '<div class="card-item-subtitle">' + (number.label || 'بدون تسمية') + '</div>';
-            html += '</div>';
-            html += '<div class="card-item-actions">';
-            html += '<button class="btn-icon-sm" data-edit-whatsapp="' + index + '">✏️</button>';
-            html += '<button class="btn-icon-sm delete" data-delete-whatsapp="' + index + '">🗑️</button>';
-            html += '</div>';
-            html += '</div>';
-        });
+        if (rustaqNums.length > 0) {
+            html += '<div class="section-title" style="margin-top:0;">🏛️ فرع الرستاق</div>';
+            rustaqNums.forEach(function(number, index) {
+                html += '<div class="card-item">';
+                html += '<div class="card-item-info">';
+                html += '<div class="card-item-title">📱 ' + number.phone + '</div>';
+                html += '<div class="card-item-subtitle">' + (number.label || 'بدون تسمية') + '</div>';
+                html += '</div>';
+                html += '<div class="card-item-actions">';
+                html += '<button class="btn-icon-sm" data-edit-whatsapp="rustaq_' + index + '">✏️</button>';
+                html += '<button class="btn-icon-sm delete" data-delete-whatsapp="rustaq_' + index + '">🗑️</button>';
+                html += '</div>';
+                html += '</div>';
+            });
+        }
+        if (mabelaNums.length > 0) {
+            html += '<div class="section-title">🏛️ فرع المعبيلة</div>';
+            mabelaNums.forEach(function(number, index) {
+                html += '<div class="card-item">';
+                html += '<div class="card-item-info">';
+                html += '<div class="card-item-title">📱 ' + number.phone + '</div>';
+                html += '<div class="card-item-subtitle">' + (number.label || 'بدون تسمية') + '</div>';
+                html += '</div>';
+                html += '<div class="card-item-actions">';
+                html += '<button class="btn-icon-sm" data-edit-whatsapp="mabela_' + index + '">✏️</button>';
+                html += '<button class="btn-icon-sm delete" data-delete-whatsapp="mabela_' + index + '">🗑️</button>';
+                html += '</div>';
+                html += '</div>';
+            });
+        }
         elements.whatsappNumbers.innerHTML = html;
         $$('[data-delete-whatsapp]').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                var idx = parseInt(btn.dataset.deleteWhatsapp);
-                deleteWhatsAppNumber(idx);
+                var parts = btn.dataset.deleteWhatsapp.split('_');
+                var branch = parts[0];
+                var idx = parseInt(parts[1]);
+                deleteWhatsAppNumber(branch, idx);
             });
         });
         $$('[data-edit-whatsapp]').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                var idx = parseInt(btn.dataset.editWhatsapp);
-                openEditWhatsAppModal(idx);
+                var parts = btn.dataset.editWhatsapp.split('_');
+                var branch = parts[0];
+                var idx = parseInt(parts[1]);
+                openEditWhatsAppModal(branch, idx);
             });
         });
     }
 
-    function deleteWhatsAppNumber(index) {
+    function deleteWhatsAppNumber(branch, index) {
         if (!confirm('هل أنت متأكد من حذف هذا الرقم؟')) return;
-        var numbers = getWhatsAppNumbers();
-        numbers.splice(index, 1);
-        setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, numbers);
+        var allNumbers = getWhatsAppNumbers();
+        if (allNumbers[branch]) {
+            allNumbers[branch].splice(index, 1);
+        }
+        setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, allNumbers);
         renderWhatsAppNumbers();
         showToast('تم حذف الرقم', 'success');
     }
 
     function openAddWhatsAppModal() {
-        var html = '<label>رقم الواتساب</label>';
-        html += '<input type="text" id="wa-phone" placeholder="+974XXXXXXXX" required>';
+        var html = '<label>الفرع</label>';
+        html += '<select id="wa-branch"><option value="rustaq">الرستاق</option><option value="mabela">المعبيلة</option></select>';
+        html += '<label>رقم الواتساب</label>';
+        html += '<input type="text" id="wa-phone" placeholder="968XXXXXXXX" required>';
         html += '<label>تسمية (اختياري)</label>';
         html += '<input type="text" id="wa-label" placeholder="مثال: مبيعات، خدمة عملاء">';
         html += '<button id="save-whatsapp-btn" class="btn-primary full-width">حفظ الرقم</button>';
@@ -635,15 +641,17 @@
             var saveBtn = $('#save-whatsapp-btn');
             if (saveBtn) {
                 saveBtn.addEventListener('click', function() {
+                    var branch = $('#wa-branch').value;
                     var phone = $('#wa-phone').value.trim();
                     var label = $('#wa-label').value.trim();
                     if (!phone) {
                         showToast('الرجاء إدخال رقم الهاتف', 'error');
                         return;
                     }
-                    var numbers = getWhatsAppNumbers();
-                    numbers.push({ phone: phone, label: label });
-                    setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, numbers);
+                    var allNumbers = getWhatsAppNumbers();
+                    if (!allNumbers[branch]) allNumbers[branch] = [];
+                    allNumbers[branch].push({ phone: phone, label: label });
+                    setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, allNumbers);
                     closeModal();
                     renderWhatsAppNumbers();
                     showToast('تم إضافة الرقم', 'success');
@@ -652,11 +660,12 @@
         }, 200);
     }
 
-    function openEditWhatsAppModal(index) {
-        var numbers = getWhatsAppNumbers();
-        var num = numbers[index];
+    function openEditWhatsAppModal(branch, index) {
+        var allNumbers = getWhatsAppNumbers();
+        var num = allNumbers[branch] && allNumbers[branch][index];
         if (!num) return;
-        var html = '<label>رقم الواتساب</label>';
+        var html = '<p style="margin-bottom:12px;color:#aaa;">الفرع: ' + (branch === 'rustaq' ? 'الرستاق' : 'المعبيلة') + '</p>';
+        html += '<label>رقم الواتساب</label>';
         html += '<input type="text" id="wa-phone" value="' + num.phone + '" required>';
         html += '<label>تسمية (اختياري)</label>';
         html += '<input type="text" id="wa-label" value="' + (num.label || '') + '">';
@@ -672,8 +681,8 @@
                         showToast('الرجاء إدخال رقم الهاتف', 'error');
                         return;
                     }
-                    numbers[index] = { phone: phone, label: label };
-                    setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, numbers);
+                    allNumbers[branch][index] = { phone: phone, label: label };
+                    setStorageItem(CONFIG.STORAGE_KEYS.WHATSAPP_NUMBERS, allNumbers);
                     closeModal();
                     renderWhatsAppNumbers();
                     showToast('تم تحديث الرقم', 'success');
@@ -752,7 +761,7 @@
             }
         });
         elements.refreshBtn.addEventListener('click', function() {
-            loadCarsData();
+            loadAllCarsData();
         });
         elements.carsSearch.addEventListener('input', function() {
             renderCars();
@@ -808,6 +817,10 @@
             showToast('تم تحديث كلمة المرور بنجاح', 'success');
         });
         elements.resetSettingsBtn.addEventListener('click', resetAllSettings);
+        var exportBtn = $('#export-shared-data-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', exportSharedData);
+        }
         elements.modalClose.addEventListener('click', closeModal);
         elements.modalBackdrop.addEventListener('click', closeModal);
         document.addEventListener('keydown', function(e) {
@@ -831,24 +844,8 @@
     function enterMainScreen() {
         showScreen(elements.mainScreen);
         initFirebase();
-        loadCarsData().then;
+        loadAllCarsData();
         updateHomeStats();
-        setInterval(function() {
-            checkScheduledNotifications();
-            var checkInterval = getNotifCheckInterval();
-            if (checkInterval > 0) {
-                var lastCheck = getStorageItem('dc_admin_last_car_check', null);
-                var now = new Date().getTime();
-                if (!lastCheck || (now - parseInt(lastCheck)) >= checkInterval * 60000) {
-                    setStorageItem('dc_admin_last_car_check', now.toString());
-                    if (carsData.length > 0) {
-                        fetchCarsFromSheets().then(function(cars) {
-                            checkForNewCars(cars);
-                        }).catch(function() {});
-                    }
-                }
-            }
-        }, 60000);
         setInterval(function() {
             checkScheduledNotifications();
         }, 30000);
