@@ -1,4 +1,4 @@
-const CONFIG = {
+var CONFIG = {
     STORAGE_KEYS: {
         FIREBASE_CONFIG: 'dc_admin_firebase_config',
         ONESIGNAL_APP_ID: 'dc_admin_onesignal_app_id',
