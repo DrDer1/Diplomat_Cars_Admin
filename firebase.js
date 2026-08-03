@@ -168,3 +168,69 @@ return false;
 }
 
 }
+function getImagePathFromUrl(url){
+
+if(!url)return"";
+
+const match=url.match(/\/o\/(.*?)\?/);
+
+if(!match)return"";
+
+return decodeURIComponent(match[1]);
+
+}
+
+async function deleteImageByUrl(url){
+
+const path=getImagePathFromUrl(url);
+
+if(!path)return false;
+
+return await deleteCarImage(path);
+
+}
+
+async function imageExists(path){
+
+if(!initFirebase())return false;
+
+try{
+
+const imageRef=ref(
+getStorageInstance(),
+path
+);
+
+await getDownloadURL(imageRef);
+
+return true;
+
+}catch(e){
+
+return false;
+
+}
+
+}
+
+window.FirebaseManager={
+
+init:initFirebase,
+
+upload:uploadCarImage,
+
+replace:replaceCarImage,
+
+delete:deleteCarImage,
+
+deleteByUrl:deleteImageByUrl,
+
+exists:imageExists,
+
+path:getImagePathFromUrl
+
+};
+
+console.log("Firebase Manager Ready");
+
+
