@@ -174,3 +174,66 @@ hideLoginDialog,
 submitLogin
 
 };
+function createPassword(password,confirm){
+
+password=password.trim();
+confirm=confirm.trim();
+
+if(password.length<4){
+
+return{
+success:false,
+message:"يجب أن تكون كلمة المرور 4 أحرف على الأقل"
+};
+
+}
+
+if(password!==confirm){
+
+return{
+success:false,
+message:"كلمتا المرور غير متطابقتين"
+};
+
+}
+
+savePassword(password);
+
+completeSetup();
+
+loginState=true;
+
+return{
+success:true
+};
+
+}
+
+function autoLogin(){
+
+if(!passwordExists())return false;
+
+loginState=true;
+
+return true;
+
+}
+
+window.addEventListener("keydown",e=>{
+
+if(e.key==="Enter"){
+
+const dialog=document.getElementById("loginDialog");
+
+if(dialog&&dialog.classList.contains("show")){
+
+submitLogin();
+
+}
+
+}
+
+});
+
+console.log("Auth Manager Ready");
+
