@@ -8,7 +8,7 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-let deferredPrompt = null;
+var deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
