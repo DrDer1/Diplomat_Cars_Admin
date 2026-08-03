@@ -2,7 +2,7 @@
     "name": "Diplomat Cars - لوحة الإدارة",
     "short_name": "DC Admin",
     "description": "لوحة إدارة نظام Diplomat Cars لعرض السيارات",
-    "start_url": "/",
+    "start_url": "./",
     "display": "standalone",
     "orientation": "portrait",
     "background_color": "#0a0a0a",
