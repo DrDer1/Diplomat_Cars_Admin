@@ -15,7 +15,17 @@ const CONFIG = {
     },
     DEFAULTS: {
         CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTWnnQ_mk_fXgnpWGc54yVlNP3s0SES-3iHb50o_F4t0HLu_ilMn5G9uLN9UUdF6XLdYXkfyNqCpHNF/pub?gid=0&single=true&output=csv',
-        WHATSAPP_NUMBERS: [],
+        WHATSAPP_NUMBERS: {
+            rustaq: [
+                {"phone": "96872222242", "label": "مالك المعرض"},
+                {"phone": "96898825877", "label": "خدمة عملاء الرستاق"},
+                {"phone": "96895096865", "label": "مدير فرع الرستاق"}
+            ],
+            mabela: [
+                {"phone": "96892256223", "label": "مبيعات المعبيلة"},
+                {"phone": "96878080132", "label": "خدمة عملاء المعبيلة"}
+            ]
+        },
         CHECK_INTERVAL_MINUTES: 30
     },
     FIREBASE_STORAGE_PATH: 'car_images',
@@ -96,8 +106,8 @@ function isSetupDone() {
     return getStorageItem(CONFIG.STORAGE_KEYS.SETUP_DONE, false);
 }
 
-function generateCarKey(carName, category, model) {
-    const str = (carName + '_' + category + '_' + model).toLowerCase();
+function generateCarKey(carName, category, model, branch) {
+    var str = (branch + '_' + carName + '_' + category + '_' + model).toLowerCase();
     return str.replace(/[^a-z0-9\u0600-\u06FF_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
 }
 
@@ -107,7 +117,7 @@ function getCarImageFileName(carKey) {
 
 function formatPrice(price) {
     if (!price) return '';
-    const num = parseFloat(String(price).replace(/[^0-9.]/g, ''));
+    var num = parseFloat(String(price).replace(/[^0-9.]/g, ''));
     if (isNaN(num)) return String(price);
     return num.toLocaleString('en-US');
 }
@@ -115,9 +125,9 @@ function formatPrice(price) {
 function formatDateTime(dateStr) {
     if (!dateStr) return '--:--';
     try {
-        const d = new Date(dateStr);
+        var d = new Date(dateStr);
         if (isNaN(d.getTime())) return dateStr;
-        const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false };
+        var options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false };
         return d.toLocaleString('ar-SA', options);
     } catch (e) {
         return dateStr;
@@ -127,17 +137,17 @@ function formatDateTime(dateStr) {
 function formatTimeAgo(dateStr) {
     if (!dateStr) return '';
     try {
-        const d = new Date(dateStr);
+        var d = new Date(dateStr);
         if (isNaN(d.getTime())) return '';
-        const now = new Date();
-        const diffMs = now - d;
-        const diffMins = Math.floor(diffMs / 60000);
+        var now = new Date();
+        var diffMs = now - d;
+        var diffMins = Math.floor(diffMs / 60000);
         if (diffMins < 1) return 'الآن';
-        if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
-        const diffHours = Math.floor(diffMins / 60);
-        if (diffHours < 24) return `منذ ${diffHours} ساعة`;
-        const diffDays = Math.floor(diffHours / 24);
-        return `منذ ${diffDays} يوم`;
+        if (diffMins < 60) return 'منذ ' + diffMins + ' دقيقة';
+        var diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return 'منذ ' + diffHours + ' ساعة';
+        var diffDays = Math.floor(diffHours / 24);
+        return 'منذ ' + diffDays + ' يوم';
     } catch (e) {
         return '';
     }
