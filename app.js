@@ -37,7 +37,7 @@
         elements.whatsappNumbers = $('#whatsapp-numbers');
         elements.addWhatsappBtn = $('#add-whatsapp-btn');
         elements.changePasswordForm = $('#change-password-form');
-        elements.firebaseSettingsForm = $('#firebase-settings-form');
+        elements.githubSettingsForm = $('#github-settings-form');
         elements.onesignalSettingsForm = $('#onesignal-settings-form');
         elements.resetSettingsBtn = $('#reset-settings-btn');
         elements.exportSharedDataBtn = $('#export-shared-data-btn');
@@ -574,14 +574,13 @@
     }
 
     function loadSettingsData() {
-        var fb = getFirebaseConfig();
-        if (fb) {
-            var fbApiKey = $('#settings-fb-apiKey'); if (fbApiKey) fbApiKey.value = fb.apiKey || '';
-            var fbAuth = $('#settings-fb-authDomain'); if (fbAuth) fbAuth.value = fb.authDomain || '';
-            var fbProj = $('#settings-fb-projectId'); if (fbProj) fbProj.value = fb.projectId || '';
-            var fbStor = $('#settings-fb-storageBucket'); if (fbStor) fbStor.value = fb.storageBucket || '';
-            var fbMsg = $('#settings-fb-messagingSenderId'); if (fbMsg) fbMsg.value = fb.messagingSenderId || '';
-            var fbApp = $('#settings-fb-appId'); if (fbApp) fbApp.value = fb.appId || '';
+        var gh = getGitHubConfig();
+        if (gh) {
+            var ghToken = $('#settings-gh-token'); if (ghToken) ghToken.value = gh.token || '';
+            var ghOwner = $('#settings-gh-owner'); if (ghOwner) ghOwner.value = gh.owner || '';
+            var ghRepo = $('#settings-gh-repo'); if (ghRepo) ghRepo.value = gh.repo || '';
+            var ghBranch = $('#settings-gh-branch'); if (ghBranch) ghBranch.value = gh.branch || '';
+            var ghPath = $('#settings-gh-path'); if (ghPath) ghPath.value = gh.path || '';
         }
         var osApp = $('#settings-os-appId'); if (osApp) osApp.value = getOneSignalAppId();
         var osKey = $('#settings-os-restApiKey'); if (osKey) osKey.value = getOneSignalRestApiKey();
@@ -657,20 +656,18 @@
             });
         }
 
-        if (elements.firebaseSettingsForm) {
-            elements.firebaseSettingsForm.addEventListener('submit', function(e) {
+        if (elements.githubSettingsForm) {
+            elements.githubSettingsForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 var config = {
-                    apiKey: $('#settings-fb-apiKey').value.trim(),
-                    authDomain: $('#settings-fb-authDomain').value.trim(),
-                    projectId: $('#settings-fb-projectId').value.trim(),
-                    storageBucket: $('#settings-fb-storageBucket').value.trim(),
-                    messagingSenderId: $('#settings-fb-messagingSenderId').value.trim(),
-                    appId: $('#settings-fb-appId').value.trim()
+                    token: $('#settings-gh-token').value.trim(),
+                    owner: $('#settings-gh-owner').value.trim(),
+                    repo: $('#settings-gh-repo').value.trim(),
+                    branch: $('#settings-gh-branch').value.trim(),
+                    path: $('#settings-gh-path').value.trim()
                 };
-                setStorageItem(CONFIG.STORAGE_KEYS.FIREBASE_CONFIG, config);
-                if (typeof initFirebase === 'function') initFirebase();
-                showToast('تم حفظ إعدادات Firebase', 'success');
+                setStorageItem(CONFIG.STORAGE_KEYS.GITHUB_CONFIG, config);
+                showToast('تم حفظ إعدادات GitHub', 'success');
             });
         }
 
@@ -698,7 +695,6 @@
 
     function enterMainScreen() {
         showScreen(elements.mainScreen);
-        if (typeof initFirebase === 'function') initFirebase();
         loadAllCarsData();
         updateHomeStats();
         setInterval(checkScheduledNotifications, 60000);
