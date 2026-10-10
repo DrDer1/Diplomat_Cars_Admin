@@ -1,12 +1,12 @@
-var CACHE_NAME = 'diplomat-cars-admin-v2';
+var CACHE_NAME = 'diplomat-cars-admin-v3';
 var ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './css/style.css',
-    './js/config.js',
-    './js/firebase.js',
-    './js/app.js',
-    './js/pwa.js',
+    './style.css',
+    './config.js',
+    './github-images.js',
+    './app.js',
+    './pwa.js',
     './manifest.json',
     './192.png',
     './512.png'
@@ -42,28 +42,20 @@ self.addEventListener('activate', function(event) {
 
 self.addEventListener('fetch', function(event) {
     if (event.request.method !== 'GET') return;
-    if (event.request.url.includes('firebasestorage.googleapis.com')) {
-        event.respondWith(
-            caches.open(CACHE_NAME).then(function(cache) {
-                return cache.match(event.request).then(function(cachedResponse) {
-                    var fetchPromise = fetch(event.request).then(function(networkResponse) {
-                        if (networkResponse && networkResponse.status === 200) {
-                            cache.put(event.request, networkResponse.clone());
-                        }
-                        return networkResponse;
-                    });
-                    return cachedResponse || fetchPromise;
-                });
-            })
-        );
+
+    if (event.request.url.includes('raw.githubusercontent.com') ||
+        event.request.url.includes('api.github.com')) {
+        event.respondWith(fetch(event.request));
         return;
     }
+
     if (event.request.url.includes('allorigins.win') ||
         event.request.url.includes('onesignal.com') ||
         event.request.url.includes('googleapis.com')) {
         event.respondWith(fetch(event.request));
         return;
     }
+
     event.respondWith(
         caches.match(event.request).then(function(cachedResponse) {
             if (cachedResponse) {
@@ -79,7 +71,8 @@ self.addEventListener('fetch', function(event) {
                 });
                 return networkResponse;
             }).catch(function() {
-                if (event.request.headers.get('accept').includes('text/html')) {
+                var accept = event.request.headers.get('accept') || '';
+                if (accept.includes('text/html')) {
                     return caches.match('./index.html');
                 }
                 return new Response('غير متصل بالإنترنت', { status: 503 });
