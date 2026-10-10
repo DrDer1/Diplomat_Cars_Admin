@@ -1,6 +1,6 @@
 var CONFIG = {
     STORAGE_KEYS: {
-        FIREBASE_CONFIG: 'dc_admin_firebase_config',
+        GITHUB_CONFIG: 'dc_admin_github_config',
         ONESIGNAL_APP_ID: 'dc_admin_onesignal_app_id',
         ONESIGNAL_REST_API: 'dc_admin_onesignal_rest_api',
         ADMIN_PASSWORD: 'dc_admin_password',
@@ -22,18 +22,16 @@ var CONFIG = {
                 {"phone": "96878080132", "label": "خدمة عملاء المعبيلة"}
             ]
         },
-        FIREBASE_CONFIG: {
-            apiKey: "AIzaSyAQXzehspAW6XYellWZVues_Px9Au4Pb4Q",
-            authDomain: "diplomat-cars-70ed3.firebaseapp.com",
-            projectId: "diplomat-cars-70ed3",
-            storageBucket: "diplomat-cars-70ed3.firebasestorage.app",
-            messagingSenderId: "189200582804",
-            appId: "1:189200582804:web:8651f2945b86dcfafa0c81"
+        GITHUB_CONFIG: {
+            token: '',
+            owner: 'DrDer1',
+            repo: 'Diplomat_Cars',
+            branch: 'main',
+            path: 'images'
         },
         ONESIGNAL_APP_ID: 'a5ef5e42-56c9-4af7-a4e2-4cf17c8d7505',
         ONESIGNAL_REST_API: 'YOUR_REST_API_KEY'
     },
-    FIREBASE_STORAGE_PATH: 'car_images',
     MAX_IMAGE_SIZE_MB: 5,
     ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'],
     TOAST_DURATION: 3000
@@ -58,8 +56,8 @@ function setStorageItem(key, value) {
     }
 }
 
-function getFirebaseConfig() {
-    return getStorageItem(CONFIG.STORAGE_KEYS.FIREBASE_CONFIG, CONFIG.DEFAULTS.FIREBASE_CONFIG);
+function getGitHubConfig() {
+    return getStorageItem(CONFIG.STORAGE_KEYS.GITHUB_CONFIG, CONFIG.DEFAULTS.GITHUB_CONFIG);
 }
 
 function getOneSignalAppId() {
